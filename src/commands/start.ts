@@ -11,6 +11,13 @@ import { loadState, reconcile, saveState, type Session } from '../registry.js'
 
 export async function start(cwd = process.cwd()): Promise<void> {
   const project = await resolveProject(cwd)
+  if (!project.hasDevClient) {
+    console.log(
+      pc.yellow(
+        `⚠ ${project.name} has no expo-dev-client — Metro will run in Expo Go mode and dev-client deep links won't work.\n  Fix: npx expo install expo-dev-client`,
+      ),
+    )
+  }
   const state = reconcile(await loadState())
   const otherSessions = state.sessions.filter((s) => s.projectPath !== project.path)
 

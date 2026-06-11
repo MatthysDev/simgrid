@@ -34,7 +34,9 @@ export async function ensureBooted(device: Device): Promise<string> {
 /** One Metro per project; every selected device connects to it. */
 export function startMetro(project: ProjectInfo, port: number): ChildProcess {
   console.log(pc.cyan(`\n▶ Metro for ${pc.bold(project.name)} on port ${port}\n`))
-  return spawn('npx', ['expo', 'start', '--port', String(port)], {
+  const args = ['expo', 'start', '--port', String(port)]
+  if (project.hasDevClient) args.push('--dev-client')
+  return spawn('npx', args, {
     cwd: project.path,
     stdio: 'inherit',
     env: process.env,
