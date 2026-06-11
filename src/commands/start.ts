@@ -5,7 +5,7 @@ import { cloneIosSim } from '../devices/ios-sim.js'
 import type { Device } from '../devices/types.js'
 import { ensureBooted, openApp, startMetro } from '../launcher.js'
 import { pickDevices } from '../picker.js'
-import { allocatePort, waitForPort } from '../ports.js'
+import { allocatePort, isPortFree, waitForPort } from '../ports.js'
 import { resolveProject } from '../project.js'
 import { loadState, reconcile, saveState, type Session } from '../registry.js'
 
@@ -50,7 +50,8 @@ export async function start(cwd = process.cwd()): Promise<void> {
 
   // One Metro per project — reuse the existing session's port when re-running
   const existing = state.sessions.find((s) => s.projectPath === project.path)
-  const port = existing?.metroPort ?? (await allocatePort(state.sessions.map((s) => s.metroPort)))
+  const metroAlreadyRunning = existing !== undefined && !(await isPortFree(existing.metroPort))
+  const port = metroAlreadyRunning ? existing.metroPort : await allocatePort(state.sessions.map((s) => s.metroPort))
 
   const sessions: Session[] = picked.map((d, i) => ({
     projectPath: project.path,
@@ -64,21 +65,28 @@ export async function start(cwd = process.cwd()): Promise<void> {
   state.sessions = [...state.sessions.filter((s) => s.pid !== process.pid), ...sessions]
   await saveState(state)
 
-  const metro = existing ? undefined : startMetro(project, port)
+  const metro = metroAlreadyRunning ? undefined : startMetro(project, port)
 
   const cleanup = async () => {
     const s = reconcile(await loadState())
     s.sessions = s.sessions.filter((x) => x.pid !== process.pid)
     await saveState(s)
   }
+  let cleaning = false
   process.on('SIGINT', () => {
-    void cleanup().finally(() => {
-      metro?.kill('SIGINT')
-      process.exit(0)
-    })
+    if (cleaning) return
+    cleaning = true
+    metro?.kill('SIGINT')
+    void cleanup()
+      .catch((e) => console.error(e))
+      .finally(() => process.exit(0))
   })
   metro?.on('exit', (code) => {
-    void cleanup().finally(() => process.exit(code ?? 0))
+    if (cleaning) return
+    cleaning = true
+    void cleanup()
+      .catch((e) => console.error(e))
+      .finally(() => process.exit(code ?? 0))
   })
 
   await waitForPort(port)

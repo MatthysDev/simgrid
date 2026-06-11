@@ -11,7 +11,12 @@ export async function stop(cwd = process.cwd()): Promise<void> {
       /* already gone */
     }
   }
-  state.sessions = state.sessions.filter((s) => s.projectPath !== cwd)
-  await saveState(state)
+  if (mine.length > 0) {
+    // let the signaled processes run their own cleanup first
+    await new Promise((r) => setTimeout(r, 500))
+  }
+  const fresh = reconcile(await loadState())
+  fresh.sessions = fresh.sessions.filter((s) => s.projectPath !== cwd)
+  await saveState(fresh)
   console.log(mine.length ? pc.green(`Stopped ${mine.length} session(s).`) : 'Nothing to stop for this project.')
 }
