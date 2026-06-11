@@ -1,9 +1,9 @@
 {
-  "name": "simpit",
+  "name": "simgrid",
   "version": "0.1.0",
-  "description": "Pit crew for your simulators — run multiple Expo projects on multiple devices, in parallel, without the alt-tab dance.",
+  "description": "One grid for all your simulators — run multiple Expo projects on multiple devices, in parallel, without the alt-tab dance.",
   "type": "module",
-  "bin": { "simpit": "./dist/cli.js" },
+  "bin": { "simgrid": "./dist/cli.js" },
   "files": ["dist"],
   "engines": { "node": ">=18" },
   "scripts": {

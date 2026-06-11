@@ -30,7 +30,7 @@ export async function start(cwd = process.cwd()): Promise<void> {
     if (busy && d.platform === 'ios-sim') {
       const yes = await confirm({ message: `${d.name} is busy with "${busy.projectName}". Clone a fresh ${d.name} for ${project.name}?` })
       if (isCancel(yes) || !yes) continue
-      const newId = await cloneIosSim(d.id, `${d.name} — simpit`)
+      const newId = await cloneIosSim(d.id, `${d.name} — simgrid`)
       resolved.push({ ...d, id: newId, state: 'shutdown', hasBuild: false })
     } else {
       resolved.push(d)

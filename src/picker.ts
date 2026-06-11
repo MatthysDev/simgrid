@@ -28,7 +28,7 @@ export async function pickDevices(
   lastIds: string[],
   projectName: string,
 ): Promise<Device[]> {
-  intro(`${pc.bgCyan(pc.black(' simpit '))} ${pc.bold(projectName)}`)
+  intro(`${pc.bgCyan(pc.black(' simgrid '))} ${pc.bold(projectName)}`)
 
   const options: Record<string, { value: string; label: string; hint: string }[]> = {}
   for (const d of sortDevices(devices)) {

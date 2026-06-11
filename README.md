@@ -1,6 +1,6 @@
-# simpit
+# simgrid
 
-**Pit crew for your simulators — run multiple Expo projects on multiple devices, in parallel, without the alt-tab dance.**
+**One grid for all your simulators — run multiple Expo projects on multiple devices, in parallel, without the alt-tab dance.**
 
 ---
 
@@ -8,16 +8,16 @@
 
 Working on several Expo / React Native projects at the same time is painful. Launch one project and it grabs whichever simulator it feels like — often the wrong one, or one already claimed by another project. You end up alt-tabbing between windows, killing and restarting Metro, resolving port conflicts by hand, and losing track of which app is running where.
 
-simpit solves this at the device layer: it knows which simulators and emulators exist, which ones already have your dev build installed, which ones are busy with another project, and it routes each project to the right device automatically.
+simgrid solves this at the device layer: it knows which simulators and emulators exist, which ones already have your dev build installed, which ones are busy with another project, and it routes each project to the right device automatically.
 
 ---
 
 ## Quick start
 
 ```bash
-# Wire simpit into one project (rewrites package.json "start" to "simpit";
+# Wire simgrid into one project (rewrites package.json "start" to "simgrid";
 # the previous start script is kept as "start:orig")
-npx simpit init
+npx simgrid init
 
 # Then start the project the usual way
 npm start
@@ -25,10 +25,10 @@ npm start
 bun start
 
 # Or run without init — works directly
-npx simpit
+npx simgrid
 ```
 
-On first run simpit shows an interactive picker. Pick one or more devices, and it handles everything: booting, Metro, deep-linking the dev client.
+On first run simgrid shows an interactive picker. Pick one or more devices, and it handles everything: booting, Metro, deep-linking the dev client.
 
 ---
 
@@ -36,7 +36,7 @@ On first run simpit shows an interactive picker. Pick one or more devices, and i
 
 ```
 1. Read project identity (app.json / app.config.ts → name, scheme, bundle ID)
-2. Load shared registry (~/.simpit/state.json) and reconcile against reality
+2. Load shared registry (~/.simgrid/state.json) and reconcile against reality
    (sessions whose Metro process is no longer alive are dropped)
 3. Discover all simulators / emulators / physical devices
 4. Annotate each device: dev build installed? busy with another project?
@@ -53,7 +53,7 @@ On first run simpit shows an interactive picker. Pick one or more devices, and i
 ### Picker
 
 ```
-  simpit  Yolgo
+  simgrid  Yolgo
 
   iOS Simulators
   iPhone / iPad
@@ -72,7 +72,7 @@ Multi-select is supported — launch the same project on several devices at once
 
 ### Shared registry
 
-`~/.simpit/state.json` tracks which project runs on which device, the Metro port, and the process PID. Every simpit run reconciles the registry by checking live PIDs before showing the picker, so sessions whose Metro process has exited are dropped automatically. Device state (booted / offline) is not checked during reconciliation — it is annotated live when the device list is built. No daemon required.
+`~/.simgrid/state.json` tracks which project runs on which device, the Metro port, and the process PID. Every simgrid run reconciles the registry by checking live PIDs before showing the picker, so sessions whose Metro process has exited are dropped automatically. Device state (booted / offline) is not checked during reconciliation — it is annotated live when the device list is built. No daemon required.
 
 ---
 
@@ -80,10 +80,10 @@ Multi-select is supported — launch the same project on several devices at once
 
 | Command | Description |
 |---|---|
-| `simpit` / `simpit start` | Interactive picker, then launch |
-| `simpit init` | Wire `"start": "simpit"` into this project's `package.json` |
-| `simpit status` | Show which project is running on which device |
-| `simpit stop` | Stop this project's sessions and deregister them |
+| `simgrid` / `simgrid start` | Interactive picker, then launch |
+| `simgrid init` | Wire `"start": "simgrid"` into this project's `package.json` |
+| `simgrid status` | Show which project is running on which device |
+| `simgrid stop` | Stop this project's sessions and deregister them |
 
 ---
 
@@ -99,22 +99,22 @@ Multi-select is supported — launch the same project on several devices at once
 ## Known limitations (v1)
 
 - **iOS physical devices — no build detection.** `hasBuild` is always false for physical iPhones/iPads because there is no cheap equivalent of `simctl get_app_container` over USB. Launch always goes through `expo run:ios --device`, which installs if needed.
-- **Paired-but-disconnected iPhones are listed.** simpit hides only devices where `tunnelState: unavailable`; a paired iPhone that is simply unplugged still appears and will connect on demand when launched.
+- **Paired-but-disconnected iPhones are listed.** simgrid hides only devices where `tunnelState: unavailable`; a paired iPhone that is simply unplugged still appears and will connect on demand when launched.
 - **Offline AVDs show "⚙️ will build".** Build detection (`pm list packages`) requires a booted device, so a shutdown AVD always shows as needing a build even if it already has one. It will fast-launch after the first boot.
-- **Busy iOS simulator → clone; cleanup is manual.** When you pick a simulator that another project is already using, simpit offers to clone it (`simctl create "iPhone 15 — simpit"`). Clones persist after the session; delete them manually in Simulator.app or with `xcrun simctl delete <udid>`. Automated cleanup is planned for v2.
-- **`expo run` port reuse.** simpit passes `--port` to `expo run:<platform>` so the freshly built app connects to the already-running Metro instance on that port. The `--no-bundler` flag is not used because it is broken on recent Expo SDK versions.
+- **Busy iOS simulator → clone; cleanup is manual.** When you pick a simulator that another project is already using, simgrid offers to clone it (`simctl create "iPhone 15 — simgrid"`). Clones persist after the session; delete them manually in Simulator.app or with `xcrun simctl delete <udid>`. Automated cleanup is planned for v2.
+- **`expo run` port reuse.** simgrid passes `--port` to `expo run:<platform>` so the freshly built app connects to the already-running Metro instance on that port. The `--no-bundler` flag is not used because it is broken on recent Expo SDK versions.
 
 ---
 
-## simpit vs baguette
+## simgrid vs baguette
 
-[baguette](https://github.com/tddworks/baguette) and simpit operate at two completely different levels and are complementary.
+[baguette](https://github.com/tddworks/baguette) and simgrid operate at two completely different levels and are complementary.
 
 **baguette** is a low-level simulator control tool: it boots a simulator headlessly, drives it with tap/swipe/screenshot, streams video at 60fps, inspects the accessibility tree, and exposes a web UI. It targets iOS only (Apple Silicon / Xcode private frameworks) and runs a resident daemon (`baguette serve`). Think of it as a successor to `idb`/`AXe`, oriented toward automation, CI, and agents that need to *drive* a UI.
 
-**simpit** operates one layer above: it asks "which project goes to which device?". It reads your `app.json`, detects installed dev builds across iOS and Android, manages Metro ports across multiple projects, and deep-links the Expo dev client. It is daemonless by design (better for open-source adoption) and works across iOS simulators, Android emulators, and physical devices.
+**simgrid** operates one layer above: it asks "which project goes to which device?". It reads your `app.json`, detects installed dev builds across iOS and Android, manages Metro ports across multiple projects, and deep-links the Expo dev client. It is daemonless by design (better for open-source adoption) and works across iOS simulators, Android emulators, and physical devices.
 
-Use baguette to control what happens *inside* a simulator; use simpit to decide *which simulator runs what*.
+Use baguette to control what happens *inside* a simulator; use simgrid to decide *which simulator runs what*.
 
 ---
 

@@ -12,6 +12,6 @@ describe('formatStatus', () => {
   })
 
   it('says so when nothing is running', () => {
-    expect(formatStatus([])).toBe('No simpit sessions running.')
+    expect(formatStatus([])).toBe('No simgrid sessions running.')
   })
 })

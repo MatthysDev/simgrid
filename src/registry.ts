@@ -17,7 +17,7 @@ export interface State {
   projectPrefs: Record<string, { lastDeviceIds: string[] }>
 }
 
-export const STATE_FILE = join(homedir(), '.simpit', 'state.json')
+export const STATE_FILE = join(homedir(), '.simgrid', 'state.json')
 
 export const emptyState = (): State => ({ sessions: [], projectPrefs: {} })
 

@@ -19,7 +19,7 @@ export function parseDevicectl(json: any): Device[] {
 }
 
 export async function discoverIosDevices(): Promise<Device[]> {
-  const out = join(tmpdir(), `simpit-devicectl-${process.pid}.json`)
+  const out = join(tmpdir(), `simgrid-devicectl-${process.pid}.json`)
   try {
     await execa('xcrun', ['devicectl', 'list', 'devices', '--json-output', out], { timeout: 10_000 })
     const devices = parseDevicectl(JSON.parse(await readFile(out, 'utf8')))

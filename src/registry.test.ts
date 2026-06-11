@@ -17,7 +17,7 @@ const session = (over: Partial<State['sessions'][0]> = {}) => ({
 
 describe('registry', () => {
   it('round-trips state through a file', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'simpit-'))
+    const dir = await mkdtemp(join(tmpdir(), 'simgrid-'))
     const file = join(dir, 'state.json')
     const state: State = { sessions: [session()], projectPrefs: { '/p/yolgo': { lastDeviceIds: ['UDID-1'] } } }
     await saveState(state, file)
@@ -25,11 +25,11 @@ describe('registry', () => {
   })
 
   it('returns empty state for a missing file', async () => {
-    expect(await loadState('/nonexistent/simpit/state.json')).toEqual(emptyState())
+    expect(await loadState('/nonexistent/simgrid/state.json')).toEqual(emptyState())
   })
 
   it('returns empty state for a corrupt file', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'simpit-'))
+    const dir = await mkdtemp(join(tmpdir(), 'simgrid-'))
     const file = join(dir, 'state.json')
     await writeFile(file, '{not json')
     expect(await loadState(file)).toEqual(emptyState())
@@ -46,7 +46,7 @@ describe('registry', () => {
   })
 
   it('drops structurally invalid session entries', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'simpit-'))
+    const dir = await mkdtemp(join(tmpdir(), 'simgrid-'))
     const file = join(dir, 'state.json')
     await writeFile(file, JSON.stringify({ sessions: [null, { bogus: true }, session()], projectPrefs: {} }))
     expect((await loadState(file)).sessions).toEqual([session()])
