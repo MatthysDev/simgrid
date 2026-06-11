@@ -25,7 +25,15 @@ export async function loadState(file = STATE_FILE): Promise<State> {
   try {
     const raw = JSON.parse(await readFile(file, 'utf8'))
     return {
-      sessions: Array.isArray(raw.sessions) ? raw.sessions : [],
+      sessions: Array.isArray(raw.sessions)
+        ? raw.sessions.filter(
+            (s: unknown): s is Session =>
+              s !== null &&
+              typeof s === 'object' &&
+              typeof (s as Session).pid === 'number' &&
+              typeof (s as Session).projectPath === 'string',
+          )
+        : [],
       projectPrefs: raw.projectPrefs && typeof raw.projectPrefs === 'object' ? raw.projectPrefs : {},
     }
   } catch {

@@ -44,4 +44,11 @@ describe('registry', () => {
     expect(next.sessions).toHaveLength(1)
     expect(next.sessions[0].pid).toBe(222)
   })
+
+  it('drops structurally invalid session entries', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'simpit-'))
+    const file = join(dir, 'state.json')
+    await writeFile(file, JSON.stringify({ sessions: [null, { bogus: true }, session()], projectPrefs: {} }))
+    expect((await loadState(file)).sessions).toEqual([session()])
+  })
 })
