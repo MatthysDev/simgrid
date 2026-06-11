@@ -21,22 +21,42 @@ export function parsePmPackages(stdout: string, pkg: string): boolean {
   return stdout.split('\n').some((l) => l.trim() === `package:${pkg}`)
 }
 
+/** Resolve a running emulator's AVD name; console first, getprop fallback. */
+async function emulatorAvdName(serial: string): Promise<string | undefined> {
+  try {
+    const { stdout } = await execa('adb', ['-s', serial, 'emu', 'avd', 'name'])
+    const name = stdout.split('\n')[0].trim()
+    if (name) return name
+  } catch {
+    /* console not ready — try getprop */
+  }
+  try {
+    const { stdout } = await execa('adb', ['-s', serial, 'shell', 'getprop', 'ro.boot.qemu.avd_name'])
+    const name = stdout.trim()
+    if (name) return name
+  } catch {
+    /* still booting */
+  }
+  return undefined
+}
+
 /** Booted emulators/devices via adb + offline AVDs via `emulator -list-avds`. */
 export async function discoverAndroid(): Promise<Device[]> {
   const devices: Device[] = []
   const runningAvds = new Set<string>()
+  let unresolvedEmulators = 0
 
   try {
     const { stdout } = await execa('adb', ['devices'])
     for (const { serial, type } of parseAdbDevices(stdout)) {
       let name = serial
       if (type === 'emulator') {
-        try {
-          const { stdout: avd } = await execa('adb', ['-s', serial, 'emu', 'avd', 'name'])
-          name = avd.split('\n')[0].trim() || serial
-          runningAvds.add(name)
-        } catch {
-          /* keep serial as name */
+        const avdName = await emulatorAvdName(serial)
+        if (avdName) {
+          name = avdName
+          runningAvds.add(avdName)
+        } else {
+          unresolvedEmulators++
         }
       }
       devices.push({
@@ -54,9 +74,13 @@ export async function discoverAndroid(): Promise<Device[]> {
 
   try {
     const { stdout } = await execa('emulator', ['-list-avds'])
-    for (const avd of parseAvdList(stdout)) {
-      if (!runningAvds.has(avd)) {
-        devices.push({ id: `avd:${avd}`, platform: 'android-emu', name: avd, model: 'Android Emulator', state: 'shutdown', hasBuild: false })
+    // If we couldn't identify every running emulator, we can't safely tell
+    // which AVDs are actually offline — skipping avoids a double boot.
+    if (unresolvedEmulators === 0) {
+      for (const avd of parseAvdList(stdout)) {
+        if (!runningAvds.has(avd)) {
+          devices.push({ id: `avd:${avd}`, platform: 'android-emu', name: avd, model: 'Android Emulator', state: 'shutdown', hasBuild: false })
+        }
       }
     }
   } catch {
