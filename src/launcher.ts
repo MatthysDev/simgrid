@@ -51,8 +51,8 @@ export async function openApp(device: Device, liveId: string, project: ProjectIn
     console.log(pc.yellow(`  ${device.name}: no dev build — running expo run (first build takes a while)…`))
     const args =
       device.platform === 'ios-sim' || device.platform === 'ios-device'
-        ? ['expo', 'run:ios', '--port', String(port), '--no-bundler', '--device', liveId]
-        : ['expo', 'run:android', '--port', String(port), '--no-bundler', '--device', liveId]
+        ? ['expo', 'run:ios', '--port', String(port), '--device', liveId]
+        : ['expo', 'run:android', '--port', String(port), '--device', liveId]
     await execa('npx', args, { cwd: project.path, stdio: 'inherit' })
     return
   }
@@ -67,9 +67,12 @@ export async function openApp(device: Device, liveId: string, project: ProjectIn
     await execa('xcrun', ['simctl', 'openurl', liveId, url])
   } else if (device.platform === 'android-emu' || device.platform === 'android-device') {
     await execa('adb', ['-s', liveId, 'shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', url])
-  } else if (project.iosBundleId) {
-    // ios-device: launch the app; the dev client reconnects or lists local servers
+  } else if (device.platform === 'ios-device' && project.iosBundleId) {
+    // launch the app; the dev client reconnects or lists local servers
     await execa('xcrun', ['devicectl', 'device', 'process', 'launch', '--device', liveId, project.iosBundleId])
+  } else {
+    console.log(pc.yellow(`  ${device.name}: cannot open the dev client automatically — open it manually and pick localhost:${port}`))
+    return
   }
   console.log(pc.green(`  ${device.name}: dev client → localhost:${port} ✓`))
 }
