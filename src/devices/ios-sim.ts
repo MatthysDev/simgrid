@@ -30,7 +30,7 @@ export function parseSimctlDevices(json: SimctlList): Device[] {
 
 export function findCloneSpec(json: SimctlList, udid: string): { deviceType: string; runtime: string } | undefined {
   for (const [runtime, devices] of Object.entries(json.devices)) {
-    const d = devices.find((x) => x.udid === udid)
+    const d = devices.find((x) => x.udid === udid && x.isAvailable)
     if (d) return { deviceType: d.deviceTypeIdentifier, runtime }
   }
   return undefined
