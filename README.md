@@ -15,7 +15,8 @@ simpit solves this at the device layer: it knows which simulators and emulators 
 ## Quick start
 
 ```bash
-# Wire simpit into one project (rewrites package.json "start" to "simpit")
+# Wire simpit into one project (rewrites package.json "start" to "simpit";
+# the previous start script is kept as "start:orig")
 npx simpit init
 
 # Then start the project the usual way
@@ -36,7 +37,7 @@ On first run simpit shows an interactive picker. Pick one or more devices, and i
 ```
 1. Read project identity (app.json / app.config.ts → name, scheme, bundle ID)
 2. Load shared registry (~/.simpit/state.json) and reconcile against reality
-   (dead PIDs and offline devices are purged automatically)
+   (sessions whose Metro process is no longer alive are dropped)
 3. Discover all simulators / emulators / physical devices
 4. Annotate each device: dev build installed? busy with another project?
 5. Show the interactive picker (pre-checked = your last choice for this project)
@@ -44,7 +45,7 @@ On first run simpit shows an interactive picker. Pick one or more devices, and i
      a. Boot / clone if needed
      b. Allocate a free Metro port (one port per project, reused across devices)
      c. Start Metro (expo start --port N) — or reuse the already-running one
-     d. Deep-link the dev client: scheme://expo-development-client/?url=http://localhost:N
+     d. Deep-link the dev client: yolgo://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081
         (or run expo run:<platform> --port N --device <id> if no build is installed yet)
 7. Register the session; deregister cleanly on Ctrl-C or Metro exit
 ```
@@ -52,25 +53,26 @@ On first run simpit shows an interactive picker. Pick one or more devices, and i
 ### Picker
 
 ```
-  simpit · project "Yolgo"
+  simpit  Yolgo
 
   iOS Simulators
-  › [x] iPhone 15            ✅ build present
-    [ ] iPhone 15 Pro        ✅ build present · 🔴 busy with "shoootin" :8082
-    [ ] iPhone SE (3rd gen)  ⚙️  will build
-  Android
-    [ ] Pixel 7 (emulator)   ✅ build present
-  Physical devices
-    [ ] Matthys's iPhone     ✅ build present
+  iPhone / iPad
+  › [x] iPhone 15            ✅ build installed
+    [ ] iPhone 15 Pro        ✅ build installed · 🔴 busy: shoootin :8082
+    [ ] iPhone SE (3rd gen)  ⚙️ will build
+  Android Emulators
+    [ ] Pixel 7 (emulator)   ✅ build installed
+  Android Devices
+    [ ] Matthys's iPhone     ✅ build installed
 
   ↑↓ navigate · space select · ⏎ launch   (pre-checked = your last pick)
 ```
 
-Multi-select is supported — launch the same project on several devices at once. The `🔴 busy` tag comes from the reconciled registry. Devices with a build already installed are listed first for instant launch.
+Multi-select is supported — launch the same project on several devices at once. The `🔴 busy` tag comes from the registry (PID-checked at startup). Devices with a build already installed are listed first for instant launch.
 
 ### Shared registry
 
-`~/.simpit/state.json` tracks which project runs on which device, the Metro port, and the process PID. Every simpit run reconciles the registry against live system state before showing the picker, so stale entries (crashed processes, rebooted devices) are cleaned up automatically. No daemon required.
+`~/.simpit/state.json` tracks which project runs on which device, the Metro port, and the process PID. Every simpit run reconciles the registry by checking live PIDs before showing the picker, so sessions whose Metro process has exited are dropped automatically. Device state (booted / offline) is not checked during reconciliation — it is annotated live when the device list is built. No daemon required.
 
 ---
 
@@ -96,11 +98,11 @@ Multi-select is supported — launch the same project on several devices at once
 
 ## Known limitations (v1)
 
-- **iOS physical devices — no build detection.** `hasBuild` is always false for physical iPhones/iPads because there is no cheap equivalent of `simctl listapps` over USB. Launch always goes through `expo run:ios --device`, which installs if needed.
+- **iOS physical devices — no build detection.** `hasBuild` is always false for physical iPhones/iPads because there is no cheap equivalent of `simctl get_app_container` over USB. Launch always goes through `expo run:ios --device`, which installs if needed.
 - **Paired-but-disconnected iPhones are listed.** simpit hides only devices where `tunnelState: unavailable`; a paired iPhone that is simply unplugged still appears and will connect on demand when launched.
 - **Offline AVDs show "⚙️ will build".** Build detection (`pm list packages`) requires a booted device, so a shutdown AVD always shows as needing a build even if it already has one. It will fast-launch after the first boot.
 - **Busy iOS simulator → clone; cleanup is manual.** When you pick a simulator that another project is already using, simpit offers to clone it (`simctl create "iPhone 15 — simpit"`). Clones persist after the session; delete them manually in Simulator.app or with `xcrun simctl delete <udid>`. Automated cleanup is planned for v2.
-- **`expo run` port handoff requires Expo SDK ≥ 51.** simpit passes `--port` to `expo run:<platform>` so the freshly built app connects to the already-running Metro. The `--no-bundler` flag (broken since SDK 51) is never used.
+- **`expo run` port reuse.** simpit passes `--port` to `expo run:<platform>` so the freshly built app connects to the already-running Metro instance on that port. The `--no-bundler` flag is not used because it is broken on recent Expo SDK versions.
 
 ---
 
@@ -118,7 +120,7 @@ Use baguette to control what happens *inside* a simulator; use simpit to decide 
 
 ## Contributing
 
-Contributions are welcome. The codebase is vanilla TypeScript (ESM, Node ≥ 18), with no framework. Each device adapter (`src/devices/ios-sim.ts`, `android.ts`, `ios-device.ts`) is isolated behind a common interface, making it straightforward to add a new platform or mock an existing one for testing. Run `npm test` / `bun test` for the test suite.
+Contributions are welcome. The codebase is vanilla TypeScript (ESM, Node ≥ 18), with no framework. Each device adapter (`src/devices/ios-sim.ts`, `android.ts`, `ios-device.ts`) is isolated behind a common interface, making it straightforward to add a new platform or mock an existing one for testing. Run `npm test` / `bun run test` for the test suite.
 
 ---
 
