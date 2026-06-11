@@ -1,6 +1,7 @@
 import { spawn, type ChildProcess } from 'node:child_process'
 import { execa } from 'execa'
 import pc from 'picocolors'
+import { applyBuildTemplate } from './build.js'
 import { findEmulatorSerial } from './devices/android.js'
 import { bootIosSim } from './devices/ios-sim.js'
 import type { Device } from './devices/types.js'
@@ -44,21 +45,20 @@ export function startMetro(project: ProjectInfo, port: number): ChildProcess {
 }
 
 /**
- * Get the app running on the device:
- * - build installed → open the dev client straight onto our Metro (instant)
- * - no build → `expo run:<platform>` compiles, installs and launches against our Metro
+ * Compile, install and launch the app against our Metro using the resolved build
+ * command template. Throws if the build exits non-zero (caller forgets the command).
+ */
+export async function runBuild(project: ProjectInfo, liveId: string, port: number, template: string): Promise<void> {
+  const command = applyBuildTemplate(template, { device: liveId, port })
+  console.log(pc.yellow(`  building (first build takes a while): ${command}`))
+  await execa(command, { cwd: project.path, stdio: 'inherit', shell: true })
+}
+
+/**
+ * Open the already-installed dev build straight onto our Metro (instant).
+ * Devices without a build go through {@link runBuild} instead.
  */
 export async function openApp(device: Device, liveId: string, project: ProjectInfo, port: number): Promise<void> {
-  if (!device.hasBuild) {
-    console.log(pc.yellow(`  ${device.name}: no dev build — running expo run (first build takes a while)…`))
-    const args =
-      device.platform === 'ios-sim' || device.platform === 'ios-device'
-        ? ['expo', 'run:ios', '--port', String(port), '--device', liveId]
-        : ['expo', 'run:android', '--port', String(port), '--device', liveId]
-    await execa('npx', args, { cwd: project.path, stdio: 'inherit' })
-    return
-  }
-
   if (!project.scheme) {
     console.log(pc.yellow(`  ${device.name}: no "scheme" in app config — open the dev client manually and pick localhost:${port}`))
     return

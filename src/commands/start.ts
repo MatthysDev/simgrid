@@ -1,22 +1,38 @@
-import { confirm, isCancel } from '@clack/prompts'
+import { confirm, isCancel, select, text } from '@clack/prompts'
+import { execa } from 'execa'
 import pc from 'picocolors'
+import {
+  buildKey,
+  candidateBuildScripts,
+  defaultBuildTemplate,
+  forgetBuild,
+  rememberBuild,
+  rememberedBuild,
+  scriptBuildTemplate,
+} from '../build.js'
 import { discoverDevices } from '../devices/index.js'
 import { cloneIosSim } from '../devices/ios-sim.js'
-import type { Device } from '../devices/types.js'
-import { ensureBooted, openApp, startMetro } from '../launcher.js'
+import type { Device, Platform } from '../devices/types.js'
+import { ensureBooted, openApp, runBuild, startMetro } from '../launcher.js'
 import { pickDevices } from '../picker.js'
 import { allocatePort, isPortFree, waitForPort } from '../ports.js'
-import { resolveProject } from '../project.js'
-import { loadState, reconcile, saveState, type Session } from '../registry.js'
+import { type ProjectInfo, resolveProject } from '../project.js'
+import { loadState, reconcile, saveState, type Session, type State } from '../registry.js'
+
+const CUSTOM = '__custom__'
 
 export async function start(cwd = process.cwd()): Promise<void> {
   const project = await resolveProject(cwd)
   if (!project.hasDevClient) {
-    console.log(
-      pc.yellow(
-        `⚠ ${project.name} has no expo-dev-client — Metro will run in Expo Go mode and dev-client deep links won't work.\n  Fix: npx expo install expo-dev-client`,
-      ),
-    )
+    const yes = await confirm({
+      message: `${project.name} has no expo-dev-client (needed for dev-client deep links). Install it now?`,
+    })
+    if (!isCancel(yes) && yes) {
+      await execa('npx', ['expo', 'install', 'expo-dev-client'], { cwd: project.path, stdio: 'inherit' })
+      project.hasDevClient = true
+    } else {
+      console.log(pc.yellow('  continuing without expo-dev-client — Metro will run in Expo Go mode.'))
+    }
   }
   const state = reconcile(await loadState())
   const otherSessions = state.sessions.filter((s) => s.projectPath !== project.path)
@@ -49,8 +65,8 @@ export async function start(cwd = process.cwd()): Promise<void> {
     return
   }
 
-  // Remember the choice for next time
-  state.projectPrefs[project.path] = { lastDeviceIds: picked.map((d) => d.id) }
+  // Remember the choice for next time (keep any remembered build commands)
+  state.projectPrefs[project.path] = { ...state.projectPrefs[project.path], lastDeviceIds: picked.map((d) => d.id) }
 
   // Boot everything in parallel; collect live ids (AVDs get an adb serial once booted)
   const liveIds = await Promise.all(picked.map((d) => ensureBooted(d)))
@@ -97,8 +113,75 @@ export async function start(cwd = process.cwd()): Promise<void> {
   })
 
   await waitForPort(port)
+  const resolvedBuilds = new Map<'ios' | 'android', string>()
   for (let i = 0; i < picked.length; i++) {
-    await openApp(picked[i], liveIds[i], project, port)
+    const device = picked[i]
+    if (device.hasBuild) {
+      await openApp(device, liveIds[i], project, port)
+      continue
+    }
+    const template = await resolveBuildCommand(project, device.platform, state, resolvedBuilds)
+    if (template === null) {
+      console.log(pc.dim(`  ${device.name}: skipped (no build command)`))
+      continue
+    }
+    try {
+      await runBuild(project, liveIds[i], port, template)
+    } catch (err) {
+      resolvedBuilds.delete(buildKey(device.platform))
+      state.projectPrefs[project.path] = forgetBuild(state.projectPrefs[project.path], device.platform)
+      await saveState(state)
+      console.error(pc.red(`  ${device.name}: build failed — I'll ask for the command again next time.`))
+      console.error(err instanceof Error ? err.message : err)
+    }
   }
-  console.log(pc.green(`\n✔ ${project.name} live on ${picked.length} device(s) — Ctrl+C to stop\n`))
+  console.log(pc.green(`\n✔ ${project.name} — Ctrl+C to stop\n`))
+}
+
+/** Resolve a platform's build command: remembered → reuse; otherwise ask once and persist. */
+async function resolveBuildCommand(
+  project: ProjectInfo,
+  platform: Platform,
+  state: State,
+  cache: Map<'ios' | 'android', string>,
+): Promise<string | null> {
+  const key = buildKey(platform)
+  const cached = cache.get(key)
+  if (cached) return cached
+
+  const remembered = rememberedBuild(state.projectPrefs[project.path], platform)
+  if (remembered) {
+    cache.set(key, remembered)
+    return remembered
+  }
+
+  const template = await askBuildCommand(project, platform)
+  if (template === null) return null
+
+  cache.set(key, template)
+  state.projectPrefs[project.path] = rememberBuild(state.projectPrefs[project.path], platform, template)
+  await saveState(state)
+  return template
+}
+
+/** First-time picker: detected scripts, the expo default, or a custom command. */
+async function askBuildCommand(project: ProjectInfo, platform: Platform): Promise<string | null> {
+  const scripts = candidateBuildScripts({ scripts: project.scripts }, platform)
+  const choice = await select({
+    message: `No dev build for ${buildKey(platform)}. How should I build ${project.name}?`,
+    options: [
+      ...scripts.map((s) => ({ value: scriptBuildTemplate(s.name), label: `npm run ${s.name}`, hint: s.command })),
+      { value: defaultBuildTemplate(platform), label: `npx expo run:${buildKey(platform)}`, hint: 'default' },
+      { value: CUSTOM, label: 'Custom command…' },
+    ],
+  })
+  if (isCancel(choice)) return null
+  if (choice !== CUSTOM) return choice as string
+
+  const custom = await text({
+    message: 'Build command (use {device} and {port} where needed):',
+    placeholder: defaultBuildTemplate(platform),
+  })
+  if (isCancel(custom) || !custom) return null
+  return custom
 }
