@@ -24,11 +24,13 @@ export function parseAppConfig(config: any, projectPath: string): ProjectInfo {
 
 /** Resolve project identity: fast path app.json, fallback to `expo config` for app.config.{js,ts}. */
 export async function resolveProject(projectPath: string): Promise<ProjectInfo> {
+  let raw: string | undefined
   try {
-    const raw = await readFile(join(projectPath, 'app.json'), 'utf8')
-    return parseAppConfig(JSON.parse(raw), projectPath)
-  } catch {
-    const { stdout } = await execa('npx', ['expo', 'config', '--json'], { cwd: projectPath })
-    return parseAppConfig(JSON.parse(stdout), projectPath)
+    raw = await readFile(join(projectPath, 'app.json'), 'utf8')
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
   }
+  if (raw !== undefined) return parseAppConfig(JSON.parse(raw), projectPath)
+  const { stdout } = await execa('npx', ['expo', 'config', '--json'], { cwd: projectPath })
+  return parseAppConfig(JSON.parse(stdout), projectPath)
 }
