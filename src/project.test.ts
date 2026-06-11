@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { packageHasDevClient, parseAppConfig } from './project.js'
+import { packageHasDevClient, packageScripts, parseAppConfig } from './project.js'
 
 describe('parseAppConfig', () => {
   it('reads identity from an app.json shape (expo wrapper)', () => {
@@ -21,6 +21,7 @@ describe('parseAppConfig', () => {
       iosBundleId: 'com.matthys.yolgo',
       androidPackage: 'com.matthys.yolgo',
       hasDevClient: false,
+      scripts: {},
     })
   })
 
@@ -45,5 +46,13 @@ describe('packageHasDevClient', () => {
   it('is false when absent or package.json is unreadable', () => {
     expect(packageHasDevClient({ dependencies: { expo: '~55.0.0' } })).toBe(false)
     expect(packageHasDevClient(undefined)).toBe(false)
+  })
+})
+
+describe('packageScripts', () => {
+  it('keeps string-valued scripts and drops the rest', () => {
+    expect(packageScripts({ scripts: { start: 'simgrid', bad: 123 } })).toEqual({ start: 'simgrid' })
+    expect(packageScripts({})).toEqual({})
+    expect(packageScripts(undefined)).toEqual({})
   })
 })

@@ -12,9 +12,15 @@ export interface Session {
   startedAt: string
 }
 
+export interface ProjectPref {
+  lastDeviceIds: string[]
+  /** Build command template per platform slot, remembered after the first build. */
+  buildCommands?: { ios?: string; android?: string }
+}
+
 export interface State {
   sessions: Session[]
-  projectPrefs: Record<string, { lastDeviceIds: string[] }>
+  projectPrefs: Record<string, ProjectPref>
 }
 
 export const STATE_FILE = join(homedir(), '.simgrid', 'state.json')
