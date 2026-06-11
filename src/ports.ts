@@ -1,12 +1,28 @@
-import { createServer } from 'node:net'
+import { createConnection } from 'node:net'
 
-/** True when nothing is listening on the port (localhost). */
-export function isPortFree(port: number): Promise<boolean> {
+function canConnect(port: number, host: string): Promise<boolean> {
   return new Promise((resolve) => {
-    const srv = createServer()
-    srv.once('error', () => resolve(false))
-    srv.listen(port, '127.0.0.1', () => srv.close(() => resolve(true)))
+    const socket = createConnection({ port, host, timeout: 500 })
+    socket.once('connect', () => {
+      socket.destroy()
+      resolve(true)
+    })
+    socket.once('error', () => resolve(false))
+    socket.once('timeout', () => {
+      socket.destroy()
+      resolve(false)
+    })
   })
+}
+
+/**
+ * True when nothing is listening on the port. Probes by connecting (not binding):
+ * on macOS a bind on 127.0.0.1 succeeds even when a server holds the IPv6
+ * wildcard `::` — which is how Metro binds — so a bind probe misses it.
+ */
+export async function isPortFree(port: number): Promise<boolean> {
+  const [v4, v6] = await Promise.all([canConnect(port, '127.0.0.1'), canConnect(port, '::1')])
+  return !v4 && !v6
 }
 
 /** First port ≥ start that is neither registered by another session nor busy on the system. */

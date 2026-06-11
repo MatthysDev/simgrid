@@ -1,5 +1,40 @@
+import { createServer, type Server } from 'node:net'
 import { describe, expect, it } from 'vitest'
-import { allocatePort } from './ports.js'
+import { allocatePort, isPortFree } from './ports.js'
+
+function listen(port: number, host?: string): Promise<Server> {
+  return new Promise((resolve, reject) => {
+    const srv = createServer()
+    srv.once('error', reject)
+    srv.listen(port, host, () => resolve(srv))
+  })
+}
+
+const close = (srv: Server) => new Promise<void>((r) => srv.close(() => r()))
+
+describe('isPortFree', () => {
+  it('is true when nothing listens', async () => {
+    expect(await isPortFree(8097)).toBe(true)
+  })
+
+  it('detects an IPv4 listener', async () => {
+    const srv = await listen(8097, '127.0.0.1')
+    try {
+      expect(await isPortFree(8097)).toBe(false)
+    } finally {
+      await close(srv)
+    }
+  })
+
+  it('detects an IPv6 wildcard listener (how Metro binds)', async () => {
+    const srv = await listen(8097) // node default: '::'
+    try {
+      expect(await isPortFree(8097)).toBe(false)
+    } finally {
+      await close(srv)
+    }
+  })
+})
 
 describe('allocatePort', () => {
   it('returns the start port when nothing is taken', async () => {
