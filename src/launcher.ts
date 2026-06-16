@@ -54,27 +54,42 @@ export async function runBuild(project: ProjectInfo, liveId: string, port: numbe
   await execa(command, { cwd: project.path, stdio: 'inherit', shell: true })
 }
 
+export type OpenAction =
+  | { kind: 'run'; command: string; args: string[] }
+  | { kind: 'manual'; reason: string }
+
+/**
+ * Decide how to open the dev client on a device, or why it can't be done
+ * automatically. Pure: no process is spawned here (see {@link openApp}).
+ */
+export function openCommandFor(device: Device, liveId: string, project: ProjectInfo, port: number): OpenAction {
+  if (!project.scheme) {
+    return { kind: 'manual', reason: `no "scheme" in app config — open the dev client manually and pick localhost:${port}` }
+  }
+  const url = devClientUrl(project.scheme, port)
+  if (device.platform === 'ios-sim') {
+    return { kind: 'run', command: 'xcrun', args: ['simctl', 'openurl', liveId, url] }
+  }
+  if (device.platform === 'android-emu' || device.platform === 'android-device') {
+    return { kind: 'run', command: 'adb', args: ['-s', liveId, 'shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', url] }
+  }
+  if (device.platform === 'ios-device' && project.iosBundleId) {
+    // launch the app; the dev client reconnects or lists local servers
+    return { kind: 'run', command: 'xcrun', args: ['devicectl', 'device', 'process', 'launch', '--device', liveId, project.iosBundleId] }
+  }
+  return { kind: 'manual', reason: `cannot open the dev client automatically — open it manually and pick localhost:${port}` }
+}
+
 /**
  * Open the already-installed dev build straight onto our Metro (instant).
  * Devices without a build go through {@link runBuild} instead.
  */
 export async function openApp(device: Device, liveId: string, project: ProjectInfo, port: number): Promise<void> {
-  if (!project.scheme) {
-    console.log(pc.yellow(`  ${device.name}: no "scheme" in app config — open the dev client manually and pick localhost:${port}`))
+  const action = openCommandFor(device, liveId, project, port)
+  if (action.kind === 'manual') {
+    console.log(pc.yellow(`  ${device.name}: ${action.reason}`))
     return
   }
-
-  const url = devClientUrl(project.scheme, port)
-  if (device.platform === 'ios-sim') {
-    await execa('xcrun', ['simctl', 'openurl', liveId, url])
-  } else if (device.platform === 'android-emu' || device.platform === 'android-device') {
-    await execa('adb', ['-s', liveId, 'shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', url])
-  } else if (device.platform === 'ios-device' && project.iosBundleId) {
-    // launch the app; the dev client reconnects or lists local servers
-    await execa('xcrun', ['devicectl', 'device', 'process', 'launch', '--device', liveId, project.iosBundleId])
-  } else {
-    console.log(pc.yellow(`  ${device.name}: cannot open the dev client automatically — open it manually and pick localhost:${port}`))
-    return
-  }
+  await execa(action.command, action.args)
   console.log(pc.green(`  ${device.name}: dev client → localhost:${port} ✓`))
 }

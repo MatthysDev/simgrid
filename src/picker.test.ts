@@ -22,6 +22,7 @@ describe('deviceHint', () => {
     const busy = {
       projectPath: '/p/shoootin',
       projectName: 'shoootin',
+      platform: 'ios-sim' as const,
       deviceId: 'X',
       deviceName: 'iPhone 15',
       metroPort: 8082,

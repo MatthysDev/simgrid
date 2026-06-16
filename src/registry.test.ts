@@ -4,9 +4,10 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { emptyState, loadState, reconcile, saveState, type State } from './registry.js'
 
-const session = (over: Partial<State['sessions'][0]> = {}) => ({
+const session = (over: Partial<State['sessions'][0]> = {}): State['sessions'][0] => ({
   projectPath: '/p/yolgo',
   projectName: 'Yolgo',
+  platform: 'ios-sim',
   deviceId: 'UDID-1',
   deviceName: 'iPhone 15',
   metroPort: 8081,

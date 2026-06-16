@@ -1,10 +1,13 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
+import type { Platform } from './devices/types.js'
 
 export interface Session {
   projectPath: string
   projectName: string
+  /** platform of the target device — drives `simgrid logs` */
+  platform: Platform
   deviceId: string
   deviceName: string
   metroPort: number
@@ -16,6 +19,8 @@ export interface ProjectPref {
   lastDeviceIds: string[]
   /** Build command template per platform slot, remembered after the first build. */
   buildCommands?: { ios?: string; android?: string }
+  /** Named device sets the user can relaunch in one shot (`--profile <name>`). */
+  profiles?: Record<string, string[]>
 }
 
 export interface State {

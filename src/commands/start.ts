@@ -1,6 +1,7 @@
 import { confirm, isCancel, select, text } from '@clack/prompts'
 import { execa } from 'execa'
 import pc from 'picocolors'
+import { parseStartArgs } from '../args.js'
 import {
   buildKey,
   candidateBuildScripts,
@@ -13,15 +14,25 @@ import {
 import { discoverDevices } from '../devices/index.js'
 import { cloneIosSim } from '../devices/ios-sim.js'
 import type { Device, Platform } from '../devices/types.js'
+import { checkTools, missingTools } from '../health.js'
 import { ensureBooted, openApp, runBuild, startMetro } from '../launcher.js'
 import { pickDevices } from '../picker.js'
 import { allocatePort, isPortFree, waitForPort } from '../ports.js'
+import { getProfile, saveProfile } from '../profile.js'
 import { type ProjectInfo, resolveProject } from '../project.js'
 import { loadState, reconcile, saveState, type Session, type State } from '../registry.js'
 
 const CUSTOM = '__custom__'
 
-export async function start(cwd = process.cwd()): Promise<void> {
+export async function start(cwd = process.cwd(), argv: string[] = process.argv.slice(3)): Promise<void> {
+  const { profile: profileName } = parseStartArgs(argv)
+
+  // Pre-flight: warn (but never block) about device tools that aren't on PATH.
+  const missing = missingTools(await checkTools())
+  if (missing.length > 0) {
+    console.log(pc.yellow(`⚠ Missing tools: ${missing.map((m) => m.name).join(', ')} — run ${pc.bold('simgrid doctor')} for details.`))
+  }
+
   const project = await resolveProject(cwd)
   if (!project.hasDevClient) {
     const yes = await confirm({
@@ -43,8 +54,20 @@ export async function start(cwd = process.cwd()): Promise<void> {
     process.exit(1)
   }
 
-  const lastIds = state.projectPrefs[project.path]?.lastDeviceIds ?? []
-  let picked = await pickDevices(devices, otherSessions, lastIds, project.name)
+  const pref = state.projectPrefs[project.path]
+  const lastIds = pref?.lastDeviceIds ?? []
+
+  // `--profile <name>`: launch a saved set directly when it exists, otherwise pick and save it under that name.
+  const savedProfile = profileName ? getProfile(pref, profileName) : undefined
+  const availableProfileIds = savedProfile?.filter((id) => devices.some((d) => d.id === id)) ?? []
+  let picked: Device[]
+  if (savedProfile && availableProfileIds.length > 0) {
+    picked = devices.filter((d) => availableProfileIds.includes(d.id))
+    console.log(pc.cyan(`▶ profile ${pc.bold(profileName as string)} — ${picked.map((d) => d.name).join(', ')}`))
+  } else {
+    if (savedProfile) console.log(pc.yellow(`Profile "${profileName}" has no available devices right now — picking manually.`))
+    picked = await pickDevices(devices, otherSessions, lastIds, project.name)
+  }
 
   // Busy iOS sims → offer a clone (two windows of the same model, zero conflict)
   const resolved: Device[] = []
@@ -66,7 +89,13 @@ export async function start(cwd = process.cwd()): Promise<void> {
   }
 
   // Remember the choice for next time (keep any remembered build commands)
-  state.projectPrefs[project.path] = { ...state.projectPrefs[project.path], lastDeviceIds: picked.map((d) => d.id) }
+  const pickedIds = picked.map((d) => d.id)
+  state.projectPrefs[project.path] = { ...state.projectPrefs[project.path], lastDeviceIds: pickedIds }
+  // First use of a new `--profile <name>`: persist this selection under that name.
+  if (profileName && !savedProfile) {
+    state.projectPrefs[project.path] = saveProfile(state.projectPrefs[project.path], profileName, pickedIds)
+    console.log(pc.dim(`  saved profile "${profileName}" (${pickedIds.length} device(s)) — replay it with: simgrid --profile ${profileName}`))
+  }
 
   // Boot everything in parallel; collect live ids (AVDs get an adb serial once booted)
   const liveIds = await Promise.all(picked.map((d) => ensureBooted(d)))
@@ -79,6 +108,7 @@ export async function start(cwd = process.cwd()): Promise<void> {
   const sessions: Session[] = picked.map((d, i) => ({
     projectPath: project.path,
     projectName: project.name,
+    platform: d.platform,
     deviceId: liveIds[i],
     deviceName: d.name,
     metroPort: port,
