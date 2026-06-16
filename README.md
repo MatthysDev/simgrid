@@ -81,9 +81,25 @@ Multi-select is supported — launch the same project on several devices at once
 | Command | Description |
 |---|---|
 | `simgrid` / `simgrid start` | Interactive picker, then launch |
+| `simgrid --profile <name>` | Launch a saved device set in one shot — saved automatically the first time you use a new name |
 | `simgrid init` | Wire `"start": "simgrid"` into this project's `package.json` |
 | `simgrid status` | Show which project is running on which device |
+| `simgrid logs [device]` | Stream a running device's system logs (filtered to the app on iOS sims). Omit `device` to pick when several are running |
+| `simgrid profiles` | List the saved device profiles for this project |
+| `simgrid doctor` | Check that `xcrun` / `adb` / `emulator` are installed, with install hints for whatever is missing |
 | `simgrid stop` | Stop this project's sessions and deregister them |
+
+### Profiles
+
+Pass `--profile <name>` to skip the picker and relaunch a remembered set of devices:
+
+```bash
+simgrid --profile demo     # first run: pick devices → saved as "demo"
+simgrid --profile demo     # next runs: launches that exact set, no picker
+simgrid profiles           # list saved profiles for this project
+```
+
+If a profile's devices aren't available right now, simgrid falls back to the picker.
 
 ---
 
@@ -103,6 +119,7 @@ Multi-select is supported — launch the same project on several devices at once
 - **Offline AVDs show "⚙️ will build".** Build detection (`pm list packages`) requires a booted device, so a shutdown AVD always shows as needing a build even if it already has one. It will fast-launch after the first boot.
 - **Busy iOS simulator → clone; cleanup is manual.** When you pick a simulator that another project is already using, simgrid offers to clone it (`simctl create "iPhone 15 — simgrid"`). Clones persist after the session; delete them manually in Simulator.app or with `xcrun simctl delete <udid>`. Automated cleanup is planned for v2.
 - **`expo run` port reuse.** simgrid passes `--port` to `expo run:<platform>` so the freshly built app connects to the already-running Metro instance on that port. The `--no-bundler` flag is not used because it is broken on recent Expo SDK versions.
+- **`simgrid logs` — no physical iOS device support.** Logs stream from iOS simulators (`simctl spawn … log stream`) and Android emulators/devices (`adb logcat`). Streaming the system log from a physical iPhone/iPad over USB isn't wired up yet.
 
 ---
 

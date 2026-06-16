@@ -1,6 +1,6 @@
 {
   "name": "simgrid",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "One grid for all your simulators — run multiple Expo projects on multiple devices, in parallel, without the alt-tab dance.",
   "type": "module",
   "bin": { "simgrid": "./dist/cli.js" },
@@ -11,7 +11,8 @@
     "dev": "tsx src/cli.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
   "keywords": ["expo", "react-native", "simulator", "emulator", "metro", "parallel", "dev-client"],
   "license": "MIT",
