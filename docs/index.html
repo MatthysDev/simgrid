@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>simgrid — one grid for all your simulators</title>
+<meta name="description" content="Run multiple Expo / React Native projects on multiple simulators, emulators and devices in parallel — without the alt-tab dance." />
+<meta property="og:title" content="simgrid" />
+<meta property="og:description" content="One grid for all your simulators — run multiple Expo projects on multiple devices, in parallel." />
+<meta property="og:type" content="website" />
+<style>
+  :root {
+    --bg: #0b0f17;
+    --bg-soft: #111726;
+    --card: #141b2c;
+    --border: #1f2940;
+    --text: #e6edf6;
+    --muted: #8b97ab;
+    --accent: #38bdf8;
+    --accent-2: #a78bfa;
+    --green: #4ade80;
+    --yellow: #fbbf24;
+    --red: #f87171;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: radial-gradient(1200px 600px at 50% -200px, #16223a 0%, var(--bg) 60%);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 0 24px; }
+
+  header.hero { text-align: center; padding: 96px 0 56px; }
+  .logo {
+    display: inline-flex; align-items: center; gap: 12px;
+    font-size: 13px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 22px;
+  }
+  .logo .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 12px var(--green); }
+  h1 {
+    font-size: clamp(44px, 9vw, 84px); margin: 0; letter-spacing: -.03em; font-weight: 800;
+    background: linear-gradient(120deg, #fff 0%, var(--accent) 55%, var(--accent-2) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .tagline { font-size: clamp(17px, 2.6vw, 22px); color: var(--muted); max-width: 640px; margin: 18px auto 0; }
+
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 34px; }
+  .install {
+    display: inline-flex; align-items: center; gap: 12px;
+    background: var(--bg-soft); border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 16px; font-family: var(--mono); font-size: 15px;
+  }
+  .install .prompt { color: var(--accent); }
+  .install button {
+    background: var(--border); color: var(--text); border: 0; border-radius: 7px;
+    padding: 5px 10px; font-size: 12px; cursor: pointer; font-family: inherit;
+  }
+  .install button:hover { background: #2a3759; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 20px; border-radius: 12px; font-weight: 600; font-size: 15px;
+    border: 1px solid var(--border);
+  }
+  .btn.primary { background: var(--accent); color: #04121c; border-color: transparent; }
+  .btn.primary:hover { text-decoration: none; filter: brightness(1.08); }
+  .btn.ghost { color: var(--text); }
+  .btn.ghost:hover { text-decoration: none; border-color: var(--accent); }
+
+  .badges { display: flex; gap: 8px; justify-content: center; margin-top: 26px; flex-wrap: wrap; }
+  .badges img { height: 20px; }
+
+  section { padding: 44px 0; }
+  h2 { font-size: 13px; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); margin: 0 0 24px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 22px;
+  }
+  .card h3 { margin: 0 0 8px; font-size: 17px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
+  .card .emoji { font-size: 22px; }
+
+  .terminal {
+    background: #0a0e16; border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+    font-family: var(--mono); font-size: 14px; box-shadow: 0 24px 60px -30px rgba(0,0,0,.8);
+  }
+  .terminal .bar { display: flex; gap: 7px; padding: 13px 16px; background: #0d1320; border-bottom: 1px solid var(--border); }
+  .terminal .bar span { width: 12px; height: 12px; border-radius: 50%; }
+  .terminal .bar .r { background: #ff5f57; } .terminal .bar .y { background: #febc2e; } .terminal .bar .g { background: #28c840; }
+  .terminal pre { margin: 0; padding: 20px; overflow-x: auto; line-height: 1.7; color: #c8d3e3; }
+  .terminal .c { color: var(--accent); } .terminal .m { color: var(--muted); }
+  .terminal .ok { color: var(--green); } .terminal .warn { color: var(--yellow); } .terminal .sel { color: #fff; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; letter-spacing: .04em; }
+  td code { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 6px; padding: 2px 7px; font-family: var(--mono); font-size: 13px; white-space: nowrap; }
+  td.desc { color: var(--muted); }
+
+  ol.steps { counter-reset: s; list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+  ol.steps li { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px 16px 56px; position: relative; color: var(--muted); }
+  ol.steps li b { color: var(--text); }
+  ol.steps li::before {
+    counter-increment: s; content: counter(s);
+    position: absolute; left: 16px; top: 16px; width: 26px; height: 26px; border-radius: 8px;
+    background: var(--bg-soft); border: 1px solid var(--border); color: var(--accent);
+    display: grid; place-items: center; font-family: var(--mono); font-size: 13px;
+  }
+
+  footer { text-align: center; color: var(--muted); padding: 56px 0 80px; border-top: 1px solid var(--border); margin-top: 24px; font-size: 14px; }
+  footer a { margin: 0 10px; }
+  .note { color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <div class="logo"><span class="dot"></span> one grid for all your simulators</div>
+      <h1>simgrid</h1>
+      <p class="tagline">Run multiple Expo / React Native projects on multiple simulators, emulators and devices — in parallel, without the alt-tab dance.</p>
+      <div class="cta">
+        <span class="install"><span class="prompt">$</span> <span id="cmd">npm i -g simgrid-cli</span> <button onclick="copyCmd()" id="copyBtn">Copy</button></span>
+        <a class="btn primary" href="https://www.npmjs.com/package/simgrid-cli">View on npm →</a>
+        <a class="btn ghost" href="https://github.com/MatthysDev/simgrid">GitHub</a>
+      </div>
+      <div class="badges">
+        <img alt="npm" src="https://img.shields.io/npm/v/simgrid-cli?color=38bdf8&label=npm" />
+        <img alt="license" src="https://img.shields.io/npm/l/simgrid-cli?color=a78bfa" />
+        <img alt="node" src="https://img.shields.io/node/v/simgrid-cli?color=4ade80" />
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <section>
+      <h2>The problem</h2>
+      <p class="note" style="max-width:680px">
+        Working on several Expo apps at once is painful: launch one and it grabs whichever simulator it
+        feels like — often the wrong one, or one already claimed by another project. You alt-tab between
+        windows, restart Metro, resolve port conflicts by hand, and lose track of which app runs where.
+        <strong style="color:var(--text)"> simgrid solves this at the device layer.</strong>
+      </p>
+    </section>
+
+    <section>
+      <h2>What it does</h2>
+      <div class="grid">
+        <div class="card"><div class="emoji">🎛️</div><h3>Interactive picker</h3><p>Pick one or many simulators, emulators or physical devices. Your last choice is pre-checked.</p></div>
+        <div class="card"><div class="emoji">🚀</div><h3>Parallel launch</h3><p>Run the same project on several devices at once — one Metro per project, reused across all of them.</p></div>
+        <div class="card"><div class="emoji">🔍</div><h3>Dev-build aware</h3><p>Detects which devices already have your dev build for instant launch; builds the rest, remembering how.</p></div>
+        <div class="card"><div class="emoji">🔌</div><h3>No port conflicts</h3><p>Allocates a free Metro port per project and deep-links the Expo dev client automatically.</p></div>
+        <div class="card"><div class="emoji">🧭</div><h3>Knows who runs what</h3><p>A shared, self-healing registry tracks every session and survives crashes &amp; <code>kill -9</code>.</p></div>
+        <div class="card"><div class="emoji">📋</div><h3>Logs · doctor · profiles</h3><p>Stream device logs, check your toolchain, and replay saved device sets in one command.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>See it</h2>
+      <div class="terminal">
+        <div class="bar"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+<pre><span class="m">$</span> <span class="c">simgrid</span>
+
+  <span class="sel">simgrid</span> <span class="m">Yolgo</span>
+
+  iOS Simulators
+  <span class="sel">›</span> [x] iPhone 15            <span class="ok">✅ build installed</span>
+    [ ] iPhone 15 Pro        <span class="ok">✅ build installed</span> · <span class="warn">🔴 busy: shoootin :8082</span>
+    [ ] iPhone SE (3rd gen)  ⚙️ will build
+  Android Emulators
+    [ ] Pixel 7 (emulator)   <span class="ok">✅ build installed</span>
+
+  <span class="m">↑↓ navigate · space select · ⏎ launch   (pre-checked = your last pick)</span>
+
+<span class="c">▶ Metro for Yolgo on port 8081</span>
+  iPhone 15: dev client → localhost:8081 <span class="ok">✓</span>
+<span class="ok">✔ Yolgo — Ctrl+C to stop</span></pre>
+      </div>
+    </section>
+
+    <section>
+      <h2>Commands</h2>
+      <table>
+        <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>simgrid</code></td><td class="desc">Interactive picker, then launch (the default).</td></tr>
+          <tr><td><code>simgrid --profile &lt;name&gt;</code></td><td class="desc">Launch a saved device set in one shot — saved automatically the first time you use a new name.</td></tr>
+          <tr><td><code>simgrid init</code></td><td class="desc">Wire <code>"start": "simgrid"</code> into this project's <code>package.json</code>.</td></tr>
+          <tr><td><code>simgrid status</code></td><td class="desc">Show which project runs on which device.</td></tr>
+          <tr><td><code>simgrid logs [device]</code></td><td class="desc">Stream a running device's system logs; picker when several are running.</td></tr>
+          <tr><td><code>simgrid profiles</code></td><td class="desc">List the saved device profiles for this project.</td></tr>
+          <tr><td><code>simgrid doctor</code></td><td class="desc">Check that <code>xcrun</code> / <code>adb</code> / <code>emulator</code> are installed, with install hints.</td></tr>
+          <tr><td><code>simgrid stop</code></td><td class="desc">Stop this project's sessions and deregister them.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>How it works</h2>
+      <ol class="steps">
+        <li>Read project identity from <b>app.json / app.config.ts</b> (name, scheme, bundle ID).</li>
+        <li>Load the shared registry <b>(~/.simgrid/state.json)</b> and reconcile it against live PIDs.</li>
+        <li>Discover every simulator, emulator and physical device; annotate <b>build installed?</b> and <b>busy?</b></li>
+        <li>Show the picker — pre-checked with your last choice for this project.</li>
+        <li>Boot, start <b>one Metro per project</b>, and deep-link the dev client (or build first if needed).</li>
+        <li>Register the session; deregister cleanly on Ctrl-C or Metro exit.</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Get started</h2>
+      <div class="terminal">
+        <div class="bar"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+<pre><span class="m"># install (published as "simgrid-cli"; the command is "simgrid")</span>
+<span class="c">npm i -g simgrid-cli</span>
+
+<span class="m"># in any Expo project — wire it into npm start (optional)</span>
+<span class="c">simgrid init</span>
+
+<span class="m"># or just run it directly</span>
+<span class="c">simgrid</span></pre>
+      </div>
+      <p class="note" style="margin-top:16px">
+        Requires Node ≥ 18. iOS simulators need macOS + Xcode; Android needs <code>adb</code> &amp; <code>emulator</code> on your PATH.
+        Your project should use an Expo <a href="https://docs.expo.dev/develop/development-builds/introduction/">development build</a>.
+      </p>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <a href="https://www.npmjs.com/package/simgrid-cli">npm</a> ·
+      <a href="https://github.com/MatthysDev/simgrid">GitHub</a> ·
+      <a href="https://github.com/MatthysDev/simgrid/releases">Releases</a> ·
+      <a href="https://github.com/MatthysDev/simgrid/issues">Issues</a>
+      <p style="margin-top:18px">MIT licensed · built with vanilla TypeScript, no framework.</p>
+    </div>
+  </footer>
+
+  <script>
+    function copyCmd() {
+      navigator.clipboard.writeText('npm i -g simgrid-cli').then(function () {
+        var b = document.getElementById('copyBtn');
+        var t = b.textContent; b.textContent = 'Copied ✓';
+        setTimeout(function () { b.textContent = t; }, 1500);
+      });
+    }
+  </script>
+</body>
+</html>
