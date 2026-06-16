@@ -15,9 +15,12 @@ simgrid solves this at the device layer: it knows which simulators and emulators
 ## Quick start
 
 ```bash
+# Install (published on npm as "simgrid-cli"; the command is "simgrid")
+npm i -g simgrid-cli
+
 # Wire simgrid into one project (rewrites package.json "start" to "simgrid";
 # the previous start script is kept as "start:orig")
-npx simgrid init
+npx simgrid-cli init
 
 # Then start the project the usual way
 npm start
@@ -25,7 +28,7 @@ npm start
 bun start
 
 # Or run without init — works directly
-npx simgrid
+npx simgrid-cli
 ```
 
 On first run simgrid shows an interactive picker. Pick one or more devices, and it handles everything: booting, Metro, deep-linking the dev client.
