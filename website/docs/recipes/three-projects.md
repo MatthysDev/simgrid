@@ -11,61 +11,61 @@ project see what the others occupy (busy devices, taken ports).
 ## Setup (once)
 
 ```bash
-cd ~/code/Yolgo    && npx simgrid-cli init
-cd ~/code/shoootin && npx simgrid-cli init
-cd ~/code/mdev2    && npx simgrid-cli init
+cd ~/code/storefront && npx simgrid-cli init
+cd ~/code/dashboard  && npx simgrid-cli init
+cd ~/code/chat       && npx simgrid-cli init
 ```
 
-## Tab 1 — Yolgo on two iPhones
+## Tab 1 — Storefront on two iPhones
 
 ```text
-~/code/Yolgo $ simgrid
+~/code/storefront $ simgrid
 
-  simgrid  Yolgo
+  simgrid  Storefront
   iOS Simulators
   › [x] iPhone 15            ✅ build installed
     [x] iPhone SE (3rd gen)  ⚙️ will build
 
-▶ Metro for Yolgo on port 8081
+▶ Metro for Storefront on port 8081
   iPhone 15: dev client → localhost:8081 ✓
   iPhone SE (3rd gen): dev client → localhost:8081 ✓
-✔ Yolgo — Ctrl+C to stop
+✔ Storefront — Ctrl+C to stop
 ```
 
 One Metro (`:8081`) for both iPhones. iPhone 15 launches instantly; iPhone SE is built once (simgrid
 asks how, then remembers).
 
-## Tab 2 — shoootin on a Pixel
+## Tab 2 — Dashboard on a Pixel
 
 ```text
-~/code/shoootin $ simgrid
+~/code/dashboard $ simgrid
 
   iOS Simulators
-    [ ] iPhone 15            ✅ build installed · 🔴 busy: Yolgo :8081
+    [ ] iPhone 15            ✅ build installed · 🔴 busy: Storefront :8081
   Android Emulators
   › [x] Pixel 7              ✅ build installed
 
-▶ Metro for shoootin on port 8082
+▶ Metro for Dashboard on port 8082
   Pixel 7: dev client → localhost:8082 ✓
-✔ shoootin — Ctrl+C to stop
+✔ Dashboard — Ctrl+C to stop
 ```
 
-Note the `🔴 busy: Yolgo :8081` tag — shoootin sees iPhone 15 is taken, and its Metro takes the next
-free port, `:8082`.
+Note the `🔴 busy: Storefront :8081` tag — Dashboard sees iPhone 15 is taken, and its Metro takes the
+next free port, `:8082`.
 
-## Tab 3 — mdev2 on a busy sim → clone
+## Tab 3 — Chat on a busy sim → clone
 
 ```text
-~/code/mdev2 $ simgrid
+~/code/chat $ simgrid
 
   iOS Simulators
-  › [x] iPhone 15            ✅ build installed · 🔴 busy: Yolgo :8081
+  › [x] iPhone 15            ✅ build installed · 🔴 busy: Storefront :8081
 
-? iPhone 15 is busy with "Yolgo". Clone a fresh iPhone 15 for mdev2? › Yes
+? iPhone 15 is busy with "Storefront". Clone a fresh iPhone 15 for Chat? › Yes
 
-▶ Metro for mdev2 on port 8083
+▶ Metro for Chat on port 8083
   iPhone 15 — simgrid: dev client → localhost:8083 ✓
-✔ mdev2 — Ctrl+C to stop
+✔ Chat — Ctrl+C to stop
 ```
 
 Picking a busy simulator offers a **clone** (`iPhone 15 — simgrid`) — two windows of the same model,
@@ -75,10 +75,10 @@ zero conflict.
 
 ```text
 $ simgrid status
-● Yolgo → iPhone 15 (Metro :8081, pid 41201)
-● Yolgo → iPhone SE (3rd gen) (Metro :8081, pid 41201)
-● shoootin → Pixel 7 (Metro :8082, pid 41588)
-● mdev2 → iPhone 15 — simgrid (Metro :8083, pid 41922)
+● Storefront → iPhone 15 (Metro :8081, pid 41201)
+● Storefront → iPhone SE (3rd gen) (Metro :8081, pid 41201)
+● Dashboard → Pixel 7 (Metro :8082, pid 41588)
+● Chat → iPhone 15 — simgrid (Metro :8083, pid 41922)
 ```
 
 Three projects, four devices, three Metros — all visible. If a process dies, `status` purges it

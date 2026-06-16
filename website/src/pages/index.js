@@ -14,10 +14,10 @@ const FEATURES = [
 ]
 
 const SAMPLE = `$ simgrid status
-● Yolgo → iPhone 15 (Metro :8081, pid 41201)
-● Yolgo → iPhone SE (3rd gen) (Metro :8081, pid 41201)
-● shoootin → Pixel 7 (Metro :8082, pid 41588)
-● mdev2 → iPhone 15 — simgrid (Metro :8083, pid 41922)`
+● Storefront → iPhone 15 (Metro :8081, pid 41201)
+● Storefront → iPhone SE (3rd gen) (Metro :8081, pid 41201)
+● Dashboard → Pixel 7 (Metro :8082, pid 41588)
+● Chat → iPhone 15 — simgrid (Metro :8083, pid 41922)`
 
 function copyInstall() {
   navigator.clipboard.writeText('npm i -g simgrid-cli')

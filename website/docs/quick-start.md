@@ -24,11 +24,11 @@ simgrid        # or: npm start
 simgrid shows an interactive picker:
 
 ```text
-  simgrid  Yolgo
+  simgrid  Storefront
 
   iOS Simulators
   › [x] iPhone 15            ✅ build installed
-    [ ] iPhone 15 Pro        ✅ build installed · 🔴 busy: shoootin :8082
+    [ ] iPhone 15 Pro        ✅ build installed · 🔴 busy: Dashboard :8082
     [ ] iPhone SE (3rd gen)  ⚙️ will build
   Android Emulators
     [ ] Pixel 7              ✅ build installed
@@ -40,9 +40,9 @@ Pick one or more devices and press <kbd>Enter</kbd>. simgrid boots them, starts 
 the project, and deep-links the dev client on each device:
 
 ```text
-▶ Metro for Yolgo on port 8081
+▶ Metro for Storefront on port 8081
   iPhone 15: dev client → localhost:8081 ✓
-✔ Yolgo — Ctrl+C to stop
+✔ Storefront — Ctrl+C to stop
 ```
 
 ## 3. Manage it

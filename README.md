@@ -50,7 +50,7 @@ On first run simgrid shows an interactive picker. Pick one or more devices, and 
      a. Boot / clone if needed
      b. Allocate a free Metro port (one port per project, reused across devices)
      c. Start Metro (expo start --port N) — or reuse the already-running one
-     d. Deep-link the dev client: yolgo://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081
+     d. Deep-link the dev client: storefront://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081
         (or run expo run:<platform> --port N --device <id> if no build is installed yet)
 7. Register the session; deregister cleanly on Ctrl-C or Metro exit
 ```
@@ -58,12 +58,12 @@ On first run simgrid shows an interactive picker. Pick one or more devices, and 
 ### Picker
 
 ```
-  simgrid  Yolgo
+  simgrid  Storefront
 
   iOS Simulators
   iPhone / iPad
   › [x] iPhone 15            ✅ build installed
-    [ ] iPhone 15 Pro        ✅ build installed · 🔴 busy: shoootin :8082
+    [ ] iPhone 15 Pro        ✅ build installed · 🔴 busy: Dashboard :8082
     [ ] iPhone SE (3rd gen)  ⚙️ will build
   Android Emulators
     [ ] Pixel 7 (emulator)   ✅ build installed
