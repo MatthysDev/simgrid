@@ -6,6 +6,9 @@
   "bin": { "simgrid": "./dist/cli.js" },
   "files": ["dist"],
   "engines": { "node": ">=18" },
+  "repository": { "type": "git", "url": "git+https://github.com/MatthysDev/simgrid.git" },
+  "bugs": { "url": "https://github.com/MatthysDev/simgrid/issues" },
+  "homepage": "https://github.com/MatthysDev/simgrid#readme",
   "scripts": {
     "build": "tsup",
     "dev": "tsx src/cli.ts",
