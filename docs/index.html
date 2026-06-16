@@ -4,136 +4,176 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>simgrid — one grid for all your simulators</title>
-<meta name="description" content="Run multiple Expo / React Native projects on multiple simulators, emulators and devices in parallel — without the alt-tab dance." />
+<meta name="description" content="Run multiple Expo / React Native projects on multiple simulators, emulators and devices in parallel — without the alt-tab dance. Open source, MIT." />
 <meta property="og:title" content="simgrid" />
 <meta property="og:description" content="One grid for all your simulators — run multiple Expo projects on multiple devices, in parallel." />
 <meta property="og:type" content="website" />
 <style>
-  :root {
-    --bg: #0b0f17;
-    --bg-soft: #111726;
-    --card: #141b2c;
-    --border: #1f2940;
-    --text: #e6edf6;
-    --muted: #8b97ab;
-    --accent: #38bdf8;
-    --accent-2: #a78bfa;
-    --green: #4ade80;
-    --yellow: #fbbf24;
-    --red: #f87171;
-    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  :root{
+    --blue:#0a2a4a;          /* blueprint base */
+    --blue-deep:#071d35;
+    --line:rgba(150,200,255,.16);
+    --line-strong:rgba(150,200,255,.34);
+    --ink:#e8f1ff;
+    --muted:#9fbcde;
+    --cyan:#7dd3fc;
+    --cyan-soft:rgba(125,211,252,.14);
+    --white:#ffffff;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background: radial-gradient(1200px 600px at 50% -200px, #16223a 0%, var(--bg) 60%);
-    color: var(--text);
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; color:var(--ink); font-family:var(--sans); line-height:1.65;
+    background-color:var(--blue);
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px),
+      linear-gradient(var(--line-strong) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-strong) 1px, transparent 1px);
+    background-size:28px 28px, 28px 28px, 140px 140px, 140px 140px;
+    background-position:-1px -1px, -1px -1px, -1px -1px, -1px -1px;
+    -webkit-font-smoothing:antialiased;
   }
-  a { color: var(--accent); text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  .wrap { max-width: 920px; margin: 0 auto; padding: 0 24px; }
+  body::before{ /* vignette */
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background:radial-gradient(1000px 700px at 50% -10%, transparent 30%, rgba(4,15,28,.55) 100%);
+  }
+  .wrap{max-width:980px; margin:0 auto; padding:0 24px; position:relative; z-index:1;}
+  a{color:var(--cyan); text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  .mono{font-family:var(--mono);}
 
-  header.hero { text-align: center; padding: 96px 0 56px; }
-  .logo {
-    display: inline-flex; align-items: center; gap: 12px;
-    font-size: 13px; letter-spacing: .18em; text-transform: uppercase;
-    color: var(--muted); margin-bottom: 22px;
+  /* ---- section scaffolding ---- */
+  section{padding:46px 0; position:relative;}
+  .sec-label{
+    font-family:var(--mono); font-size:12px; letter-spacing:.22em; color:var(--cyan);
+    display:flex; align-items:center; gap:14px; margin:0 0 26px; text-transform:uppercase;
   }
-  .logo .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 12px var(--green); }
-  h1 {
-    font-size: clamp(44px, 9vw, 84px); margin: 0; letter-spacing: -.03em; font-weight: 800;
-    background: linear-gradient(120deg, #fff 0%, var(--accent) 55%, var(--accent-2) 100%);
-    -webkit-background-clip: text; background-clip: text; color: transparent;
+  .sec-label::after{content:""; flex:1; height:1px; background:var(--line-strong);}
+  .sec-label .idx{color:var(--muted);}
+
+  /* ---- hero ---- */
+  header.hero{padding:84px 0 30px; text-align:center; border-bottom:1px dashed var(--line-strong);}
+  .stamp{
+    display:inline-block; font-family:var(--mono); font-size:11px; letter-spacing:.28em;
+    color:var(--muted); border:1px solid var(--line-strong); border-radius:4px;
+    padding:5px 12px; text-transform:uppercase; margin-bottom:26px;
   }
-  .tagline { font-size: clamp(17px, 2.6vw, 22px); color: var(--muted); max-width: 640px; margin: 18px auto 0; }
-
-  .cta { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 34px; }
-  .install {
-    display: inline-flex; align-items: center; gap: 12px;
-    background: var(--bg-soft); border: 1px solid var(--border); border-radius: 12px;
-    padding: 12px 16px; font-family: var(--mono); font-size: 15px;
+  h1{
+    font-family:var(--mono); font-weight:700; letter-spacing:-.01em;
+    font-size:clamp(52px,11vw,108px); margin:0; line-height:.95; color:var(--white);
+    text-shadow:0 0 30px rgba(125,211,252,.25);
   }
-  .install .prompt { color: var(--accent); }
-  .install button {
-    background: var(--border); color: var(--text); border: 0; border-radius: 7px;
-    padding: 5px 10px; font-size: 12px; cursor: pointer; font-family: inherit;
+  h1 .grid-dot{color:var(--cyan);}
+  .tagline{font-size:clamp(16px,2.4vw,20px); color:var(--muted); max-width:600px; margin:20px auto 0;}
+  .cta{display:flex; flex-wrap:wrap; gap:12px; justify-content:center; align-items:center; margin-top:32px;}
+  .install{
+    display:inline-flex; align-items:center; gap:12px; background:var(--blue-deep);
+    border:1px solid var(--line-strong); border-radius:6px; padding:11px 14px;
+    font-family:var(--mono); font-size:14px;
   }
-  .install button:hover { background: #2a3759; }
-  .btn {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 12px 20px; border-radius: 12px; font-weight: 600; font-size: 15px;
-    border: 1px solid var(--border);
+  .install .p{color:var(--cyan);}
+  .install button{
+    background:transparent; color:var(--muted); border:1px solid var(--line-strong);
+    border-radius:4px; padding:4px 9px; font-size:11px; cursor:pointer; font-family:var(--mono);
   }
-  .btn.primary { background: var(--accent); color: #04121c; border-color: transparent; }
-  .btn.primary:hover { text-decoration: none; filter: brightness(1.08); }
-  .btn.ghost { color: var(--text); }
-  .btn.ghost:hover { text-decoration: none; border-color: var(--accent); }
+  .install button:hover{color:var(--white); border-color:var(--cyan);}
+  .btn{display:inline-flex; align-items:center; gap:8px; padding:11px 18px; border-radius:6px;
+    font-weight:600; font-size:14px; border:1px solid var(--line-strong); font-family:var(--mono);}
+  .btn.primary{background:var(--cyan); color:#062138; border-color:transparent;}
+  .btn.primary:hover{filter:brightness(1.08); text-decoration:none;}
+  .btn.ghost{color:var(--ink);}
+  .btn.ghost:hover{border-color:var(--cyan); text-decoration:none;}
+  .badges{display:flex; gap:8px; justify-content:center; margin-top:24px; flex-wrap:wrap;}
+  .badges img{height:20px;}
 
-  .badges { display: flex; gap: 8px; justify-content: center; margin-top: 26px; flex-wrap: wrap; }
-  .badges img { height: 20px; }
+  .lead{max-width:680px; color:var(--muted); font-size:16px;}
+  .lead b{color:var(--ink);}
 
-  section { padding: 44px 0; }
-  h2 { font-size: 13px; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); margin: 0 0 24px; }
-
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
-  .card {
-    background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 22px;
+  /* ---- panels (blueprint cards) ---- */
+  .grid2{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:18px;}
+  .panel{
+    position:relative; background:rgba(7,29,53,.55); border:1px solid var(--line-strong);
+    border-radius:6px; padding:22px 22px 20px;
   }
-  .card h3 { margin: 0 0 8px; font-size: 17px; }
-  .card p { margin: 0; color: var(--muted); font-size: 15px; }
-  .card .emoji { font-size: 22px; }
+  .panel .tag{font-family:var(--mono); font-size:11px; letter-spacing:.14em; color:var(--cyan); display:block; margin-bottom:10px;}
+  .panel h3{margin:0 0 8px; font-size:18px; color:var(--white);}
+  .panel p{margin:0; color:var(--muted); font-size:15px;}
+  /* corner crosshair ticks */
+  .panel::before,.panel::after{content:""; position:absolute; width:9px; height:9px; pointer-events:none;}
+  .panel::before{top:-1px; left:-1px; border-top:2px solid var(--cyan); border-left:2px solid var(--cyan);}
+  .panel::after{bottom:-1px; right:-1px; border-bottom:2px solid var(--cyan); border-right:2px solid var(--cyan);}
 
-  .terminal {
-    background: #0a0e16; border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
-    font-family: var(--mono); font-size: 14px; box-shadow: 0 24px 60px -30px rgba(0,0,0,.8);
-  }
-  .terminal .bar { display: flex; gap: 7px; padding: 13px 16px; background: #0d1320; border-bottom: 1px solid var(--border); }
-  .terminal .bar span { width: 12px; height: 12px; border-radius: 50%; }
-  .terminal .bar .r { background: #ff5f57; } .terminal .bar .y { background: #febc2e; } .terminal .bar .g { background: #28c840; }
-  .terminal pre { margin: 0; padding: 20px; overflow-x: auto; line-height: 1.7; color: #c8d3e3; }
-  .terminal .c { color: var(--accent); } .terminal .m { color: var(--muted); }
-  .terminal .ok { color: var(--green); } .terminal .warn { color: var(--yellow); } .terminal .sel { color: #fff; }
+  /* ---- commands table ---- */
+  .legend{width:100%; border-collapse:collapse; font-size:15px; border:1px solid var(--line-strong); background:rgba(7,29,53,.45);}
+  .legend th,.legend td{text-align:left; padding:12px 16px; border-bottom:1px solid var(--line);}
+  .legend tr:last-child td{border-bottom:0;}
+  .legend th{font-family:var(--mono); font-size:11px; letter-spacing:.14em; color:var(--cyan); text-transform:uppercase;}
+  .legend td.cmd{font-family:var(--mono); font-size:13px; color:var(--white); white-space:nowrap;}
+  .legend td.desc{color:var(--muted);}
+  .legend tr:hover td{background:var(--cyan-soft);}
 
-  table { width: 100%; border-collapse: collapse; font-size: 15px; }
-  th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
-  th { color: var(--muted); font-weight: 600; font-size: 13px; letter-spacing: .04em; }
-  td code { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 6px; padding: 2px 7px; font-family: var(--mono); font-size: 13px; white-space: nowrap; }
-  td.desc { color: var(--muted); }
-
-  ol.steps { counter-reset: s; list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
-  ol.steps li { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px 16px 56px; position: relative; color: var(--muted); }
-  ol.steps li b { color: var(--text); }
-  ol.steps li::before {
-    counter-increment: s; content: counter(s);
-    position: absolute; left: 16px; top: 16px; width: 26px; height: 26px; border-radius: 8px;
-    background: var(--bg-soft); border: 1px solid var(--border); color: var(--accent);
-    display: grid; place-items: center; font-family: var(--mono); font-size: 13px;
+  /* ---- flow / how it works ---- */
+  .flow{display:grid; gap:0; counter-reset:f; border-left:1px dashed var(--line-strong); margin-left:14px;}
+  .flow li{list-style:none; position:relative; padding:0 0 24px 30px; color:var(--muted);}
+  .flow li:last-child{padding-bottom:0;}
+  .flow li b{color:var(--ink);}
+  .flow li::before{
+    counter-increment:f; content:counter(f,decimal-leading-zero);
+    position:absolute; left:-15px; top:0; width:28px; height:28px; border-radius:50%;
+    background:var(--blue); border:1px solid var(--cyan); color:var(--cyan);
+    font-family:var(--mono); font-size:11px; display:grid; place-items:center;
   }
 
-  footer { text-align: center; color: var(--muted); padding: 56px 0 80px; border-top: 1px solid var(--border); margin-top: 24px; font-size: 14px; }
-  footer a { margin: 0 10px; }
-  .note { color: var(--muted); font-size: 14px; }
+  /* ---- terminal ---- */
+  .terminal{background:var(--blue-deep); border:1px solid var(--line-strong); border-radius:6px; overflow:hidden;
+    font-family:var(--mono); font-size:13.5px; position:relative;}
+  .terminal .bar{display:flex; align-items:center; gap:7px; padding:11px 14px; border-bottom:1px solid var(--line);}
+  .terminal .bar span{width:10px; height:10px; border-radius:50%; border:1px solid var(--line-strong);}
+  .terminal .bar .t{margin-left:8px; font-size:11px; letter-spacing:.1em; color:var(--muted);}
+  .terminal pre{margin:0; padding:18px; overflow-x:auto; line-height:1.7; color:#cfe0f5;}
+  .terminal .c{color:var(--cyan);} .terminal .m{color:var(--muted);} .terminal .ok{color:#7ee0a8;}
+  .terminal .warn{color:#ffd479;} .terminal .sel{color:var(--white);}
+
+  /* ---- title block footer (engineering drawing) ---- */
+  footer{margin-top:40px; border-top:1px solid var(--line-strong);}
+  .titleblock{
+    display:grid; grid-template-columns:2fr 1fr 1fr 1fr; border:1px solid var(--line-strong);
+    border-bottom:0; font-family:var(--mono); font-size:12px; margin:34px 0 0;
+  }
+  .titleblock .cell{padding:12px 16px; border-right:1px solid var(--line); border-bottom:1px solid var(--line);}
+  .titleblock .cell:nth-child(4n){border-right:0;}
+  .titleblock .k{color:var(--muted); font-size:10px; letter-spacing:.16em; text-transform:uppercase; display:block; margin-bottom:4px;}
+  .titleblock .v{color:var(--white);}
+  .titleblock .big .v{font-size:16px;}
+  .foot-links{padding:18px 0 70px; text-align:center; color:var(--muted); font-size:13px; font-family:var(--mono);}
+  .foot-links a{margin:0 10px;}
+
+  @media(max-width:620px){
+    .titleblock{grid-template-columns:1fr 1fr;}
+    .titleblock .cell:nth-child(4n){border-right:1px solid var(--line);}
+    .titleblock .cell:nth-child(2n){border-right:0;}
+  }
 </style>
 </head>
 <body>
+
   <header class="hero">
     <div class="wrap">
-      <div class="logo"><span class="dot"></span> one grid for all your simulators</div>
-      <h1>simgrid</h1>
-      <p class="tagline">Run multiple Expo / React Native projects on multiple simulators, emulators and devices — in parallel, without the alt-tab dance.</p>
+      <span class="stamp">Open source · MIT · v0.2.0</span>
+      <h1>sim<span class="grid-dot">·</span>grid</h1>
+      <p class="tagline">One grid for all your simulators. Run multiple Expo projects on multiple devices — in parallel, without the alt-tab dance.</p>
       <div class="cta">
-        <span class="install"><span class="prompt">$</span> <span id="cmd">npm i -g simgrid-cli</span> <button onclick="copyCmd()" id="copyBtn">Copy</button></span>
-        <a class="btn primary" href="https://www.npmjs.com/package/simgrid-cli">View on npm →</a>
+        <span class="install"><span class="p">$</span> <span id="cmd">npm i -g simgrid-cli</span> <button id="copyBtn" onclick="copyCmd()">copy</button></span>
+        <a class="btn primary" href="https://www.npmjs.com/package/simgrid-cli">npm →</a>
         <a class="btn ghost" href="https://github.com/MatthysDev/simgrid">GitHub</a>
       </div>
       <div class="badges">
-        <img alt="npm" src="https://img.shields.io/npm/v/simgrid-cli?color=38bdf8&label=npm" />
-        <img alt="license" src="https://img.shields.io/npm/l/simgrid-cli?color=a78bfa" />
-        <img alt="node" src="https://img.shields.io/node/v/simgrid-cli?color=4ade80" />
+        <img alt="npm" src="https://img.shields.io/npm/v/simgrid-cli?color=7dd3fc&labelColor=0a2a4a&label=npm" />
+        <img alt="license" src="https://img.shields.io/npm/l/simgrid-cli?color=7dd3fc&labelColor=0a2a4a" />
+        <img alt="node" src="https://img.shields.io/node/v/simgrid-cli?color=7dd3fc&labelColor=0a2a4a" />
       </div>
     </div>
   </header>
@@ -141,95 +181,109 @@
   <main class="wrap">
 
     <section>
-      <h2>The problem</h2>
-      <p class="note" style="max-width:680px">
-        Working on several Expo apps at once is painful: launch one and it grabs whichever simulator it
-        feels like — often the wrong one, or one already claimed by another project. You alt-tab between
-        windows, restart Metro, resolve port conflicts by hand, and lose track of which app runs where.
-        <strong style="color:var(--text)"> simgrid solves this at the device layer.</strong>
+      <p class="sec-label"><span class="idx">00 /</span> The idea</p>
+      <p class="lead">
+        Juggling several Expo apps means each one grabs whichever simulator it wants — often the wrong one,
+        or one already taken. You alt-tab, restart Metro, fix port clashes by hand.
+        <b>simgrid routes each project to the right device, runs one Metro per project, and remembers who runs what.</b>
+        No daemon. No config. Works across iOS simulators, Android emulators and physical devices.
       </p>
     </section>
 
     <section>
-      <h2>What it does</h2>
-      <div class="grid">
-        <div class="card"><div class="emoji">🎛️</div><h3>Interactive picker</h3><p>Pick one or many simulators, emulators or physical devices. Your last choice is pre-checked.</p></div>
-        <div class="card"><div class="emoji">🚀</div><h3>Parallel launch</h3><p>Run the same project on several devices at once — one Metro per project, reused across all of them.</p></div>
-        <div class="card"><div class="emoji">🔍</div><h3>Dev-build aware</h3><p>Detects which devices already have your dev build for instant launch; builds the rest, remembering how.</p></div>
-        <div class="card"><div class="emoji">🔌</div><h3>No port conflicts</h3><p>Allocates a free Metro port per project and deep-links the Expo dev client automatically.</p></div>
-        <div class="card"><div class="emoji">🧭</div><h3>Knows who runs what</h3><p>A shared, self-healing registry tracks every session and survives crashes &amp; <code>kill -9</code>.</p></div>
-        <div class="card"><div class="emoji">📋</div><h3>Logs · doctor · profiles</h3><p>Stream device logs, check your toolchain, and replay saved device sets in one command.</p></div>
+      <p class="sec-label"><span class="idx">01 /</span> Use cases</p>
+      <div class="grid2">
+        <div class="panel">
+          <span class="tag">UC-01 · AGENCY</span>
+          <h3>Several client apps at once</h3>
+          <p>Boot 3 projects on 3 devices in three terminal tabs. Each gets its own Metro and port — zero collisions, one glance at <span class="mono">simgrid status</span>.</p>
+        </div>
+        <div class="panel">
+          <span class="tag">UC-02 · QA</span>
+          <h3>One app, many devices</h3>
+          <p>Launch the same project on an iPhone, an iPad and a Pixel in parallel to check a layout across screen sizes and OS versions in one shot.</p>
+        </div>
+        <div class="panel">
+          <span class="tag">UC-03 · CROSS-PLATFORM</span>
+          <h3>iOS + Android side by side</h3>
+          <p>Build a feature once and watch it live on both platforms simultaneously — no more launch-kill-relaunch between iOS and Android.</p>
+        </div>
+        <div class="panel">
+          <span class="tag">UC-04 · DEMO</span>
+          <h3>Replay your exact setup</h3>
+          <p>Save your demo device set once: <span class="mono">simgrid --profile demo</span>. Next time it relaunches the same devices instantly, no picker.</p>
+        </div>
       </div>
     </section>
 
     <section>
-      <h2>See it</h2>
+      <p class="sec-label"><span class="idx">02 /</span> In action</p>
       <div class="terminal">
-        <div class="bar"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+        <div class="bar"><span></span><span></span><span></span><span class="t">~/projects/Yolgo — simgrid</span></div>
 <pre><span class="m">$</span> <span class="c">simgrid</span>
 
-  <span class="sel">simgrid</span> <span class="m">Yolgo</span>
+  simgrid  Yolgo
 
   iOS Simulators
   <span class="sel">›</span> [x] iPhone 15            <span class="ok">✅ build installed</span>
+    [x] iPhone SE (3rd gen)  ⚙️ will build
     [ ] iPhone 15 Pro        <span class="ok">✅ build installed</span> · <span class="warn">🔴 busy: shoootin :8082</span>
-    [ ] iPhone SE (3rd gen)  ⚙️ will build
   Android Emulators
-    [ ] Pixel 7 (emulator)   <span class="ok">✅ build installed</span>
-
+    [ ] Pixel 7              <span class="ok">✅ build installed</span>
   <span class="m">↑↓ navigate · space select · ⏎ launch   (pre-checked = your last pick)</span>
 
 <span class="c">▶ Metro for Yolgo on port 8081</span>
   iPhone 15: dev client → localhost:8081 <span class="ok">✓</span>
+  iPhone SE (3rd gen): dev client → localhost:8081 <span class="ok">✓</span>
 <span class="ok">✔ Yolgo — Ctrl+C to stop</span></pre>
       </div>
     </section>
 
     <section>
-      <h2>Commands</h2>
-      <table>
-        <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+      <p class="sec-label"><span class="idx">03 /</span> Commands</p>
+      <table class="legend">
+        <thead><tr><th>Command</th><th>Function</th></tr></thead>
         <tbody>
-          <tr><td><code>simgrid</code></td><td class="desc">Interactive picker, then launch (the default).</td></tr>
-          <tr><td><code>simgrid --profile &lt;name&gt;</code></td><td class="desc">Launch a saved device set in one shot — saved automatically the first time you use a new name.</td></tr>
-          <tr><td><code>simgrid init</code></td><td class="desc">Wire <code>"start": "simgrid"</code> into this project's <code>package.json</code>.</td></tr>
-          <tr><td><code>simgrid status</code></td><td class="desc">Show which project runs on which device.</td></tr>
-          <tr><td><code>simgrid logs [device]</code></td><td class="desc">Stream a running device's system logs; picker when several are running.</td></tr>
-          <tr><td><code>simgrid profiles</code></td><td class="desc">List the saved device profiles for this project.</td></tr>
-          <tr><td><code>simgrid doctor</code></td><td class="desc">Check that <code>xcrun</code> / <code>adb</code> / <code>emulator</code> are installed, with install hints.</td></tr>
-          <tr><td><code>simgrid stop</code></td><td class="desc">Stop this project's sessions and deregister them.</td></tr>
+          <tr><td class="cmd">simgrid</td><td class="desc">Interactive picker, then launch — the default.</td></tr>
+          <tr><td class="cmd">simgrid --profile &lt;name&gt;</td><td class="desc">Launch a saved device set; saved automatically the first time you use a name.</td></tr>
+          <tr><td class="cmd">simgrid init</td><td class="desc">Wire <span class="mono">"start": "simgrid"</span> into the project's package.json.</td></tr>
+          <tr><td class="cmd">simgrid status</td><td class="desc">Show which project runs on which device (global).</td></tr>
+          <tr><td class="cmd">simgrid logs [device]</td><td class="desc">Stream a running device's system logs; picker when several run.</td></tr>
+          <tr><td class="cmd">simgrid profiles</td><td class="desc">List saved device profiles for this project.</td></tr>
+          <tr><td class="cmd">simgrid doctor</td><td class="desc">Check xcrun / adb / emulator on your PATH, with install hints.</td></tr>
+          <tr><td class="cmd">simgrid stop</td><td class="desc">Stop this project's sessions and deregister them.</td></tr>
         </tbody>
       </table>
     </section>
 
     <section>
-      <h2>How it works</h2>
-      <ol class="steps">
+      <p class="sec-label"><span class="idx">04 /</span> How it works</p>
+      <ol class="flow">
         <li>Read project identity from <b>app.json / app.config.ts</b> (name, scheme, bundle ID).</li>
-        <li>Load the shared registry <b>(~/.simgrid/state.json)</b> and reconcile it against live PIDs.</li>
-        <li>Discover every simulator, emulator and physical device; annotate <b>build installed?</b> and <b>busy?</b></li>
-        <li>Show the picker — pre-checked with your last choice for this project.</li>
-        <li>Boot, start <b>one Metro per project</b>, and deep-link the dev client (or build first if needed).</li>
+        <li>Load the shared registry <b>~/.simgrid/state.json</b> and reconcile it against live PIDs.</li>
+        <li>Discover every simulator, emulator and device; mark <b>build installed?</b> and <b>busy?</b></li>
+        <li>Show the picker, pre-checked with your last choice for this project.</li>
+        <li>Boot, start <b>one Metro per project</b>, deep-link the dev client (or build first if needed).</li>
         <li>Register the session; deregister cleanly on Ctrl-C or Metro exit.</li>
       </ol>
     </section>
 
     <section>
-      <h2>Get started</h2>
+      <p class="sec-label"><span class="idx">05 /</span> Get started</p>
       <div class="terminal">
-        <div class="bar"><span class="r"></span><span class="y"></span><span class="g"></span></div>
-<pre><span class="m"># install (published as "simgrid-cli"; the command is "simgrid")</span>
+        <div class="bar"><span></span><span></span><span></span><span class="t">install</span></div>
+<pre><span class="m"># published as "simgrid-cli" — the command is "simgrid"</span>
 <span class="c">npm i -g simgrid-cli</span>
 
-<span class="m"># in any Expo project — wire it into npm start (optional)</span>
+<span class="m"># wire it into npm start (optional)</span>
 <span class="c">simgrid init</span>
 
-<span class="m"># or just run it directly</span>
+<span class="m"># or just run it, in any Expo project</span>
 <span class="c">simgrid</span></pre>
       </div>
-      <p class="note" style="margin-top:16px">
-        Requires Node ≥ 18. iOS simulators need macOS + Xcode; Android needs <code>adb</code> &amp; <code>emulator</code> on your PATH.
-        Your project should use an Expo <a href="https://docs.expo.dev/develop/development-builds/introduction/">development build</a>.
+      <p class="lead" style="margin-top:16px; font-size:14px;">
+        Requires Node ≥ 18. iOS sims need macOS + Xcode; Android needs <span class="mono">adb</span> &amp; <span class="mono">emulator</span> on PATH.
+        Use an Expo <a href="https://docs.expo.dev/develop/development-builds/introduction/">development build</a>.
       </p>
     </section>
 
@@ -237,20 +291,30 @@
 
   <footer>
     <div class="wrap">
-      <a href="https://www.npmjs.com/package/simgrid-cli">npm</a> ·
-      <a href="https://github.com/MatthysDev/simgrid">GitHub</a> ·
-      <a href="https://github.com/MatthysDev/simgrid/releases">Releases</a> ·
-      <a href="https://github.com/MatthysDev/simgrid/issues">Issues</a>
-      <p style="margin-top:18px">MIT licensed · built with vanilla TypeScript, no framework.</p>
+      <div class="titleblock">
+        <div class="cell big"><span class="k">Project</span><span class="v">simgrid — one grid for all your simulators</span></div>
+        <div class="cell"><span class="k">Rev</span><span class="v">0.2.0</span></div>
+        <div class="cell"><span class="k">License</span><span class="v">MIT</span></div>
+        <div class="cell"><span class="k">Sheet</span><span class="v">1 / 1</span></div>
+        <div class="cell"><span class="k">Drawn by</span><span class="v">MatthysDev</span></div>
+        <div class="cell"><span class="k">Stack</span><span class="v">TypeScript · ESM</span></div>
+        <div class="cell"><span class="k">Tests</span><span class="v">72 passing</span></div>
+        <div class="cell"><span class="k">Daemon</span><span class="v">none</span></div>
+      </div>
+      <p class="foot-links">
+        <a href="https://www.npmjs.com/package/simgrid-cli">npm</a> ·
+        <a href="https://github.com/MatthysDev/simgrid">github</a> ·
+        <a href="https://github.com/MatthysDev/simgrid/releases">releases</a> ·
+        <a href="https://github.com/MatthysDev/simgrid/issues">issues</a>
+      </p>
     </div>
   </footer>
 
   <script>
-    function copyCmd() {
-      navigator.clipboard.writeText('npm i -g simgrid-cli').then(function () {
-        var b = document.getElementById('copyBtn');
-        var t = b.textContent; b.textContent = 'Copied ✓';
-        setTimeout(function () { b.textContent = t; }, 1500);
+    function copyCmd(){
+      navigator.clipboard.writeText('npm i -g simgrid-cli').then(function(){
+        var b=document.getElementById('copyBtn'), t=b.textContent;
+        b.textContent='copied ✓'; setTimeout(function(){b.textContent=t;},1500);
       });
     }
   </script>
