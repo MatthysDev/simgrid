@@ -6,6 +6,7 @@ import { findEmulatorSerial } from './devices/android.js'
 import { bootIosSim } from './devices/ios-sim.js'
 import type { Device } from './devices/types.js'
 import type { ProjectInfo } from './project.js'
+import { expoArgv } from './runner.js'
 
 export function devClientUrl(scheme: string, port: number): string {
   return `${scheme}://expo-development-client/?url=${encodeURIComponent(`http://localhost:${port}`)}`
@@ -35,9 +36,10 @@ export async function ensureBooted(device: Device): Promise<string> {
 /** One Metro per project; every selected device connects to it. */
 export function startMetro(project: ProjectInfo, port: number): ChildProcess {
   console.log(pc.cyan(`\n▶ Metro for ${pc.bold(project.name)} on port ${port}\n`))
-  const args = ['expo', 'start', '--port', String(port)]
+  const { command, prefix } = expoArgv(project.runner)
+  const args = [...prefix, 'start', '--port', String(port)]
   if (project.hasDevClient) args.push('--dev-client')
-  return spawn('npx', args, {
+  return spawn(command, args, {
     cwd: project.path,
     stdio: 'inherit',
     env: process.env,

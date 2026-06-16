@@ -38,6 +38,23 @@ export async function allocatePort(
   throw new Error(`No free Metro port found in range ${start}-${start + 99}`)
 }
 
+/**
+ * Decide which Metro port to use for a project: reuse the one from an existing live session
+ * (port still occupied ⇒ Metro is up), otherwise allocate a fresh free port. `reused` tells the
+ * caller whether it still needs to spawn Metro.
+ */
+export async function pickMetroPort(
+  sessions: { projectPath: string; metroPort: number }[],
+  projectPath: string,
+  isFree: (port: number) => Promise<boolean> = isPortFree,
+): Promise<{ port: number; reused: boolean }> {
+  const existing = sessions.find((s) => s.projectPath === projectPath)
+  if (existing !== undefined && !(await isFree(existing.metroPort))) {
+    return { port: existing.metroPort, reused: true }
+  }
+  return { port: await allocatePort(sessions.map((s) => s.metroPort), isFree), reused: false }
+}
+
 /** Resolves once something is listening on the port (Metro is up). */
 export async function waitForPort(port: number, timeoutMs = 60_000): Promise<void> {
   const startedAt = Date.now()

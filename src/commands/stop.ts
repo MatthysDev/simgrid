@@ -1,5 +1,5 @@
 import pc from 'picocolors'
-import { loadState, reconcile, saveState } from '../registry.js'
+import { loadState, mutateState, reconcile } from '../registry.js'
 
 export async function stop(cwd = process.cwd()): Promise<void> {
   const state = reconcile(await loadState())
@@ -15,8 +15,10 @@ export async function stop(cwd = process.cwd()): Promise<void> {
     // let the signaled processes run their own cleanup first
     await new Promise((r) => setTimeout(r, 500))
   }
-  const fresh = reconcile(await loadState())
-  fresh.sessions = fresh.sessions.filter((s) => s.projectPath !== cwd)
-  await saveState(fresh)
+  // re-read under lock: drop this project's sessions (and any the signaled procs missed)
+  await mutateState((s) => {
+    const r = reconcile(s)
+    return { ...r, sessions: r.sessions.filter((x) => x.projectPath !== cwd) }
+  })
   console.log(mine.length ? pc.green(`Stopped ${mine.length} session(s).`) : 'Nothing to stop for this project.')
 }

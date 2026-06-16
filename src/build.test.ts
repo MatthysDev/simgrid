@@ -39,13 +39,17 @@ describe('candidateBuildScripts', () => {
 })
 
 describe('build templates', () => {
-  it('builds a default template with device/port placeholders', () => {
-    expect(defaultBuildTemplate('ios-sim')).toBe('npx expo run:ios --device {device} --port {port}')
-    expect(defaultBuildTemplate('android-emu')).toBe('npx expo run:android --device {device} --port {port}')
+  it('builds a default template with device/port placeholders for the project runner', () => {
+    expect(defaultBuildTemplate('npm', 'ios-sim')).toBe('npx expo run:ios --device {device} --port {port}')
+    expect(defaultBuildTemplate('npm', 'android-emu')).toBe('npx expo run:android --device {device} --port {port}')
+    expect(defaultBuildTemplate('bun', 'ios-sim')).toBe('bunx expo run:ios --device {device} --port {port}')
+    expect(defaultBuildTemplate('pnpm', 'android-emu')).toBe('pnpm exec expo run:android --device {device} --port {port}')
   })
 
-  it('builds an npm-script template that passes flags through with --', () => {
-    expect(scriptBuildTemplate('ios:dev')).toBe('npm run ios:dev -- --device {device} --port {port}')
+  it('builds a script template that passes flags through with -- per runner', () => {
+    expect(scriptBuildTemplate('npm', 'ios:dev')).toBe('npm run ios:dev -- --device {device} --port {port}')
+    expect(scriptBuildTemplate('yarn', 'ios:dev')).toBe('yarn ios:dev -- --device {device} --port {port}')
+    expect(scriptBuildTemplate('bun', 'android:dev')).toBe('bun run android:dev -- --device {device} --port {port}')
   })
 })
 

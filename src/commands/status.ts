@@ -1,4 +1,4 @@
-import { loadState, reconcile, saveState, type Session } from '../registry.js'
+import { mutateState, reconcile, type Session } from '../registry.js'
 
 export function formatStatus(sessions: Session[]): string {
   if (sessions.length === 0) return 'No simgrid sessions running.'
@@ -6,7 +6,6 @@ export function formatStatus(sessions: Session[]): string {
 }
 
 export async function status(): Promise<void> {
-  const state = reconcile(await loadState())
-  await saveState(state) // persist the cleanup
+  const state = await mutateState((s) => reconcile(s)) // reconcile + persist the cleanup, atomically
   console.log(formatStatus(state.sessions))
 }

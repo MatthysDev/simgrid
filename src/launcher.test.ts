@@ -18,6 +18,7 @@ describe('openCommandFor', () => {
     androidPackage: 'com.matthys.yolgo',
     hasDevClient: true,
     scripts: {},
+    runner: 'npm',
     ...over,
   })
   const device = (over: Partial<Device> = {}): Device => ({

@@ -22,6 +22,7 @@ describe('parseAppConfig', () => {
       androidPackage: 'com.matthys.yolgo',
       hasDevClient: false,
       scripts: {},
+      runner: 'npm',
     })
   })
 

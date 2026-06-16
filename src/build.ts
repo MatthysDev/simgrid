@@ -1,5 +1,6 @@
 import type { Platform } from './devices/types.js'
 import type { ProjectPref } from './registry.js'
+import { expoExec, type Runner, scriptRun } from './runner.js'
 
 export interface BuildScript {
   name: string
@@ -20,14 +21,14 @@ export function candidateBuildScripts(pkg: any, platform: Platform): BuildScript
     .map(([name, command]) => ({ name, command: command as string }))
 }
 
-/** Default build command template (`npx expo run:…`) with device/port placeholders. */
-export function defaultBuildTemplate(platform: Platform): string {
-  return `npx expo run:${buildKey(platform)} --device {device} --port {port}`
+/** Default build command template (`<runner> expo run:…`) with device/port placeholders. */
+export function defaultBuildTemplate(runner: Runner, platform: Platform): string {
+  return `${expoExec(runner)} run:${buildKey(platform)} --device {device} --port {port}`
 }
 
-/** Template that runs an npm script, passing the device/port flags through with `--`. */
-export function scriptBuildTemplate(scriptName: string): string {
-  return `npm run ${scriptName} -- --device {device} --port {port}`
+/** Template that runs a package.json script, passing the device/port flags through with `--`. */
+export function scriptBuildTemplate(runner: Runner, scriptName: string): string {
+  return `${scriptRun(runner)} ${scriptName} -- --device {device} --port {port}`
 }
 
 /** Resolve a stored template into a runnable shell command. */

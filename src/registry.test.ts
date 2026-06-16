@@ -1,8 +1,8 @@
-import { mkdtemp, writeFile } from 'node:fs/promises'
+import { mkdtemp, readdir, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { emptyState, loadState, reconcile, saveState, type State } from './registry.js'
+import { emptyState, loadState, mutateState, reconcile, saveState, type State } from './registry.js'
 
 const session = (over: Partial<State['sessions'][0]> = {}): State['sessions'][0] => ({
   projectPath: '/p/yolgo',
@@ -51,5 +51,40 @@ describe('registry', () => {
     const file = join(dir, 'state.json')
     await writeFile(file, JSON.stringify({ sessions: [null, { bogus: true }, session()], projectPrefs: {} }))
     expect((await loadState(file)).sessions).toEqual([session()])
+  })
+
+  it('drops sessions without a valid platform (pre-0.2 state)', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'simgrid-'))
+    const file = join(dir, 'state.json')
+    const { platform: _omit, ...noPlatform } = session({ deviceId: 'OLD' })
+    await writeFile(
+      file,
+      JSON.stringify({ sessions: [session(), noPlatform, session({ deviceId: 'X', platform: 'martian' as never })], projectPrefs: {} }),
+    )
+    expect((await loadState(file)).sessions).toEqual([session()])
+  })
+
+  it('saves atomically — no temp file left behind', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'simgrid-'))
+    const file = join(dir, 'state.json')
+    await saveState({ sessions: [session()], projectPrefs: {} }, file)
+    const entries = await readdir(dir)
+    expect(entries).toEqual(['state.json'])
+  })
+
+  it('mutateState serialises concurrent updates without losing writes', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'simgrid-'))
+    const file = join(dir, 'state.json')
+    await saveState(emptyState(), file)
+    await Promise.all(
+      Array.from({ length: 8 }, (_, i) =>
+        mutateState((s) => {
+          s.sessions.push(session({ pid: i, deviceId: `D${i}` }))
+        }, file),
+      ),
+    )
+    const loaded = await loadState(file)
+    expect(loaded.sessions).toHaveLength(8)
+    expect(new Set(loaded.sessions.map((s) => s.deviceId)).size).toBe(8)
   })
 })

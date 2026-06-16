@@ -17,10 +17,11 @@ import type { Device, Platform } from '../devices/types.js'
 import { checkTools, missingTools } from '../health.js'
 import { ensureBooted, openApp, runBuild, startMetro } from '../launcher.js'
 import { pickDevices } from '../picker.js'
-import { allocatePort, isPortFree, waitForPort } from '../ports.js'
+import { pickMetroPort, waitForPort } from '../ports.js'
 import { getProfile, saveProfile } from '../profile.js'
 import { type ProjectInfo, resolveProject } from '../project.js'
-import { loadState, reconcile, saveState, type Session, type State } from '../registry.js'
+import { loadState, mutateState, type ProjectPref, reconcile, type Session } from '../registry.js'
+import { expoArgv, expoExec, scriptRun } from '../runner.js'
 
 const CUSTOM = '__custom__'
 
@@ -39,7 +40,8 @@ export async function start(cwd = process.cwd(), argv: string[] = process.argv.s
       message: `${project.name} has no expo-dev-client (needed for dev-client deep links). Install it now?`,
     })
     if (!isCancel(yes) && yes) {
-      await execa('npx', ['expo', 'install', 'expo-dev-client'], { cwd: project.path, stdio: 'inherit' })
+      const { command, prefix } = expoArgv(project.runner)
+      await execa(command, [...prefix, 'install', 'expo-dev-client'], { cwd: project.path, stdio: 'inherit' })
       project.hasDevClient = true
     } else {
       console.log(pc.yellow('  continuing without expo-dev-client — Metro will run in Expo Go mode.'))
@@ -88,22 +90,24 @@ export async function start(cwd = process.cwd(), argv: string[] = process.argv.s
     return
   }
 
-  // Remember the choice for next time (keep any remembered build commands)
+  // Remember the choice (and, on first use of a new --profile, save it) — locked delta.
   const pickedIds = picked.map((d) => d.id)
-  state.projectPrefs[project.path] = { ...state.projectPrefs[project.path], lastDeviceIds: pickedIds }
-  // First use of a new `--profile <name>`: persist this selection under that name.
+  await mutateState((s) => {
+    const cur = s.projectPrefs[project.path] ?? { lastDeviceIds: [] }
+    let next: ProjectPref = { ...cur, lastDeviceIds: pickedIds }
+    if (profileName && !savedProfile) next = saveProfile(next, profileName, pickedIds)
+    s.projectPrefs[project.path] = next
+  })
   if (profileName && !savedProfile) {
-    state.projectPrefs[project.path] = saveProfile(state.projectPrefs[project.path], profileName, pickedIds)
     console.log(pc.dim(`  saved profile "${profileName}" (${pickedIds.length} device(s)) — replay it with: simgrid --profile ${profileName}`))
   }
 
   // Boot everything in parallel; collect live ids (AVDs get an adb serial once booted)
   const liveIds = await Promise.all(picked.map((d) => ensureBooted(d)))
 
-  // One Metro per project — reuse the existing session's port when re-running
-  const existing = state.sessions.find((s) => s.projectPath === project.path)
-  const metroAlreadyRunning = existing !== undefined && !(await isPortFree(existing.metroPort))
-  const port = metroAlreadyRunning ? existing.metroPort : await allocatePort(state.sessions.map((s) => s.metroPort))
+  // One Metro per project — reuse the running one when re-launching (decided against fresh state)
+  const fresh = reconcile(await loadState())
+  const { port, reused } = await pickMetroPort(fresh.sessions, project.path)
 
   const sessions: Session[] = picked.map((d, i) => ({
     projectPath: project.path,
@@ -115,52 +119,76 @@ export async function start(cwd = process.cwd(), argv: string[] = process.argv.s
     pid: process.pid,
     startedAt: new Date().toISOString(),
   }))
-  state.sessions = [...state.sessions.filter((s) => s.pid !== process.pid), ...sessions]
-  await saveState(state)
+  await mutateState((s) => {
+    s.sessions = [...s.sessions.filter((x) => x.pid !== process.pid), ...sessions]
+  })
 
-  const metro = metroAlreadyRunning ? undefined : startMetro(project, port)
+  const metro = reused ? undefined : startMetro(project, port)
 
-  const cleanup = async () => {
-    const s = reconcile(await loadState())
-    s.sessions = s.sessions.filter((x) => x.pid !== process.pid)
-    await saveState(s)
-  }
   let cleaning = false
+  const cleanup = () =>
+    mutateState((s) => {
+      const r = reconcile(s)
+      return { ...r, sessions: r.sessions.filter((x) => x.pid !== process.pid) }
+    })
   process.on('SIGINT', () => {
     if (cleaning) return
     cleaning = true
-    metro?.kill('SIGINT')
-    void cleanup()
+    try {
+      metro?.kill('SIGINT')
+    } catch {
+      /* already gone */
+    }
+    cleanup()
       .catch((e) => console.error(e))
       .finally(() => process.exit(0))
   })
   metro?.on('exit', (code) => {
     if (cleaning) return
     cleaning = true
-    void cleanup()
+    cleanup()
       .catch((e) => console.error(e))
       .finally(() => process.exit(code ?? 0))
   })
 
-  await waitForPort(port)
-  const resolvedBuilds = new Map<'ios' | 'android', string>()
+  try {
+    await waitForPort(port)
+  } catch (err) {
+    cleaning = true
+    try {
+      metro?.kill('SIGINT')
+    } catch {
+      /* already gone */
+    }
+    console.error(pc.red(`  Metro never started listening on port ${port}.`))
+    console.error(err instanceof Error ? err.message : String(err))
+    await cleanup().catch((e) => console.error(e))
+    process.exit(1)
+  }
+
+  let prefs: ProjectPref | undefined = (await loadState()).projectPrefs[project.path]
+  const cache = new Map<'ios' | 'android', string>()
   for (let i = 0; i < picked.length; i++) {
     const device = picked[i]
     if (device.hasBuild) {
       await openApp(device, liveIds[i], project, port)
       continue
     }
-    const template = await resolveBuildCommand(project, device.platform, state, resolvedBuilds)
+    const key = buildKey(device.platform)
+    let template: string | null = cache.get(key) ?? rememberedBuild(prefs, device.platform) ?? null
+    const wasKnown = template !== null
+    if (!template) template = await askBuildCommand(project, device.platform)
     if (template === null) {
       console.log(pc.dim(`  ${device.name}: skipped (no build command)`))
       continue
     }
+    cache.set(key, template)
+    if (!wasKnown) prefs = await rememberBuildCommand(project.path, device.platform, template)
     try {
       await runBuild(project, liveIds[i], port, template)
     } catch (err) {
-      resolvedBuilds.delete(buildKey(device.platform))
-      state.projectPrefs[project.path] = forgetBuild(state.projectPrefs[project.path], device.platform)
-      await saveState(state)
+      cache.delete(key)
+      prefs = await forgetBuildCommand(project.path, device.platform)
       console.error(pc.red(`  ${device.name}: build failed — I'll ask for the command again next time.`))
       console.error(err instanceof Error ? err.message : err)
     }
@@ -168,40 +196,32 @@ export async function start(cwd = process.cwd(), argv: string[] = process.argv.s
   console.log(pc.green(`\n✔ ${project.name} — Ctrl+C to stop\n`))
 }
 
-/** Resolve a platform's build command: remembered → reuse; otherwise ask once and persist. */
-async function resolveBuildCommand(
-  project: ProjectInfo,
-  platform: Platform,
-  state: State,
-  cache: Map<'ios' | 'android', string>,
-): Promise<string | null> {
-  const key = buildKey(platform)
-  const cached = cache.get(key)
-  if (cached) return cached
-
-  const remembered = rememberedBuild(state.projectPrefs[project.path], platform)
-  if (remembered) {
-    cache.set(key, remembered)
-    return remembered
-  }
-
-  const template = await askBuildCommand(project, platform)
-  if (template === null) return null
-
-  cache.set(key, template)
-  state.projectPrefs[project.path] = rememberBuild(state.projectPrefs[project.path], platform, template)
-  await saveState(state)
-  return template
+/** Persist a freshly chosen build command for this project + platform (locked delta). */
+async function rememberBuildCommand(path: string, platform: Platform, template: string): Promise<ProjectPref> {
+  const s = await mutateState((st) => {
+    const cur = st.projectPrefs[path] ?? { lastDeviceIds: [] }
+    st.projectPrefs[path] = rememberBuild(cur, platform, template)
+  })
+  return s.projectPrefs[path]
 }
 
-/** First-time picker: detected scripts, the expo default, or a custom command. */
+/** Forget a build command after it failed, so simgrid asks again next time (locked delta). */
+async function forgetBuildCommand(path: string, platform: Platform): Promise<ProjectPref> {
+  const s = await mutateState((st) => {
+    const cur = st.projectPrefs[path] ?? { lastDeviceIds: [] }
+    st.projectPrefs[path] = forgetBuild(cur, platform)
+  })
+  return s.projectPrefs[path]
+}
+
+/** First-time picker: detected scripts, the runner's expo default, or a custom command. */
 async function askBuildCommand(project: ProjectInfo, platform: Platform): Promise<string | null> {
   const scripts = candidateBuildScripts({ scripts: project.scripts }, platform)
   const choice = await select({
     message: `No dev build for ${buildKey(platform)}. How should I build ${project.name}?`,
     options: [
-      ...scripts.map((s) => ({ value: scriptBuildTemplate(s.name), label: `npm run ${s.name}`, hint: s.command })),
-      { value: defaultBuildTemplate(platform), label: `npx expo run:${buildKey(platform)}`, hint: 'default' },
+      ...scripts.map((s) => ({ value: scriptBuildTemplate(project.runner, s.name), label: `${scriptRun(project.runner)} ${s.name}`, hint: s.command })),
+      { value: defaultBuildTemplate(project.runner, platform), label: `${expoExec(project.runner)} run:${buildKey(platform)}`, hint: 'default' },
       { value: CUSTOM, label: 'Custom command…' },
     ],
   })
@@ -210,7 +230,7 @@ async function askBuildCommand(project: ProjectInfo, platform: Platform): Promis
 
   const custom = await text({
     message: 'Build command (use {device} and {port} where needed):',
-    placeholder: defaultBuildTemplate(platform),
+    placeholder: defaultBuildTemplate(project.runner, platform),
   })
   if (isCancel(custom) || !custom) return null
   return custom
