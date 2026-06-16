@@ -2,6 +2,8 @@
 
 **One grid for all your simulators — run multiple Expo projects on multiple devices, in parallel, without the alt-tab dance.**
 
+📖 **Website & docs:** https://matthysdev.github.io/simgrid/ · 📦 **npm:** [`simgrid-cli`](https://www.npmjs.com/package/simgrid-cli)
+
 ---
 
 ## The problem
