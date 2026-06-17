@@ -1,4 +1,4 @@
-import { confirm, isCancel, select, text } from '@clack/prompts'
+import { confirm, isCancel, select, spinner, text } from '@clack/prompts'
 import { execa } from 'execa'
 import pc from 'picocolors'
 import { parseStartArgs } from '../args.js'
@@ -22,11 +22,14 @@ import { getProfile, saveProfile } from '../profile.js'
 import { type ProjectInfo, resolveProject } from '../project.js'
 import { loadState, mutateState, type ProjectPref, reconcile, type Session } from '../registry.js'
 import { expoArgv, expoExec, scriptRun } from '../runner.js'
+import { banner, launchSummary } from '../ui.js'
 
 const CUSTOM = '__custom__'
 
 export async function start(cwd = process.cwd(), argv: string[] = process.argv.slice(3)): Promise<void> {
   const { profile: profileName } = parseStartArgs(argv)
+
+  console.log(`\n${banner()}\n`)
 
   // Pre-flight: warn (but never block) about device tools that aren't on PATH.
   const missing = missingTools(await checkTools())
@@ -50,7 +53,10 @@ export async function start(cwd = process.cwd(), argv: string[] = process.argv.s
   const state = reconcile(await loadState())
   const otherSessions = state.sessions.filter((s) => s.projectPath !== project.path)
 
+  const findSp = spinner()
+  findSp.start('Finding simulators & devices')
   const devices = await discoverDevices(project)
+  findSp.stop(devices.length ? pc.dim(`${devices.length} device(s) found`) : 'No devices found')
   if (devices.length === 0) {
     console.error(pc.red('No simulators, emulators or devices found. Install Xcode and/or Android SDK.'))
     process.exit(1)
@@ -103,7 +109,10 @@ export async function start(cwd = process.cwd(), argv: string[] = process.argv.s
   }
 
   // Boot everything in parallel; collect live ids (AVDs get an adb serial once booted)
+  const bootSp = spinner()
+  bootSp.start('Booting devices (AVDs can take a minute)')
   const liveIds = await Promise.all(picked.map((d) => ensureBooted(d)))
+  bootSp.stop(pc.dim(`${picked.length} device(s) ready`))
 
   // One Metro per project — reuse the running one when re-launching (decided against fresh state)
   const fresh = reconcile(await loadState())
@@ -193,7 +202,12 @@ export async function start(cwd = process.cwd(), argv: string[] = process.argv.s
       console.error(err instanceof Error ? err.message : err)
     }
   }
-  console.log(pc.green(`\n✔ ${project.name} — Ctrl+C to stop\n`))
+  console.log(
+    `\n${launchSummary(
+      project.name,
+      sessions.map((s) => ({ platform: s.platform, deviceName: s.deviceName, metroPort: s.metroPort })),
+    )}\n`,
+  )
 }
 
 /** Persist a freshly chosen build command for this project + platform (locked delta). */

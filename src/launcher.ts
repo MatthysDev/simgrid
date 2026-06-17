@@ -17,14 +17,12 @@ export async function ensureBooted(device: Device): Promise<string> {
   if (device.state === 'booted') return device.id
 
   if (device.platform === 'ios-sim') {
-    console.log(pc.dim(`  booting ${device.name}…`))
     await bootIosSim(device.id)
     return device.id
   }
 
   if (device.platform === 'android-emu' && device.id.startsWith('avd:')) {
     const avd = device.id.slice('avd:'.length)
-    console.log(pc.dim(`  booting AVD ${avd}… (this can take a minute)`))
     const child = spawn('emulator', ['-avd', avd], { detached: true, stdio: 'ignore' })
     child.unref()
     return await findEmulatorSerial(avd)

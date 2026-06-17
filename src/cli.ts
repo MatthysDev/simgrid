@@ -6,6 +6,7 @@ import { profiles } from './commands/profiles.js'
 import { start } from './commands/start.js'
 import { status } from './commands/status.js'
 import { stop } from './commands/stop.js'
+import { VERSION } from './ui.js'
 
 const HELP = `
 ${pc.bold('simgrid')} — one grid for all your simulators
@@ -50,6 +51,11 @@ switch (cmd) {
   case '--help':
   case '-h':
     console.log(HELP)
+    break
+  case 'version':
+  case '--version':
+  case '-v':
+    console.log(`simgrid v${VERSION}`)
     break
   default:
     // bare flags (e.g. `simgrid --profile demo`) fall through to start;
