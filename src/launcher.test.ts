@@ -19,6 +19,7 @@ describe('openCommandFor', () => {
     hasDevClient: true,
     scripts: {},
     runner: 'npm',
+    version: '1.0.0',
     ...over,
   })
   const device = (over: Partial<Device> = {}): Device => ({
@@ -28,6 +29,7 @@ describe('openCommandFor', () => {
     model: '',
     state: 'booted',
     hasBuild: true,
+    buildStatus: 'up-to-date',
     ...over,
   })
 

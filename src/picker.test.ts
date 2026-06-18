@@ -9,16 +9,28 @@ const dev = (over: Partial<Device>): Device => ({
   model: 'iOS 17 5',
   state: 'shutdown',
   hasBuild: false,
+  buildStatus: 'unknown',
   ...over,
 })
 
 describe('deviceHint', () => {
-  it('shows build + boot state', () => {
-    expect(deviceHint(dev({ hasBuild: true, state: 'booted' }), undefined)).toBe('✅ build installed · 🟢 booted')
-    expect(deviceHint(dev({}), undefined)).toBe('⚙️ will build')
+  it('renders each build status', () => {
+    expect(deviceHint(dev({ buildStatus: 'absent' }), undefined)).toBe('⚙️ will build')
+    expect(deviceHint(dev({ buildStatus: 'up-to-date', hasBuild: true }), undefined)).toBe('✅ up to date')
+    expect(deviceHint(dev({ buildStatus: 'rebuild', hasBuild: true }), undefined)).toBe('♻️ rebuild required')
+    expect(deviceHint(dev({ buildStatus: 'untracked', hasBuild: true }), undefined)).toBe('✅ installed (native untracked)')
+    expect(deviceHint(dev({ buildStatus: 'unknown' }), undefined)).toBe('· build status unknown')
   })
 
-  it('flags devices busy with another project', () => {
+  it('appends an installed→target version diff when they differ', () => {
+    expect(deviceHint(dev({ buildStatus: 'rebuild', hasBuild: true, installedVersion: '1.1.0' }), undefined, '1.2.0')).toBe(
+      '♻️ rebuild required (v1.1.0 → 1.2.0)',
+    )
+    // same version → no suffix
+    expect(deviceHint(dev({ buildStatus: 'up-to-date', hasBuild: true, installedVersion: '1.2.0' }), undefined, '1.2.0')).toBe('✅ up to date')
+  })
+
+  it('shows boot state and busy owner alongside the build status', () => {
     const busy = {
       projectPath: '/p/shoootin',
       projectName: 'shoootin',
@@ -29,7 +41,8 @@ describe('deviceHint', () => {
       pid: 1,
       startedAt: '',
     }
-    expect(deviceHint(dev({ hasBuild: true }), busy)).toBe('✅ build installed · 🔴 busy: shoootin :8082')
+    expect(deviceHint(dev({ buildStatus: 'up-to-date', hasBuild: true, state: 'booted' }), undefined)).toBe('✅ up to date · 🟢 booted')
+    expect(deviceHint(dev({ buildStatus: 'up-to-date', hasBuild: true }), busy)).toBe('✅ up to date · 🔴 busy: shoootin :8082')
   })
 })
 

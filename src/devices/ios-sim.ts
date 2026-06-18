@@ -24,6 +24,7 @@ export function parseSimctlDevices(json: SimctlList): Device[] {
         model: runtime.split('.').pop()?.replace(/-/g, ' ') ?? runtime,
         state: d.state === 'Booted' ? ('booted' as const) : ('shutdown' as const),
         hasBuild: false,
+        buildStatus: 'unknown' as const,
       })),
   )
 }
@@ -56,6 +57,22 @@ export async function hasIosBuild(udid: string, bundleId: string): Promise<boole
     return true
   } catch {
     return false
+  }
+}
+
+export function plistShortVersion(plist: Record<string, unknown>): string | undefined {
+  const v = plist.CFBundleShortVersionString
+  return typeof v === 'string' ? v : undefined
+}
+
+/** Marketing version baked into the installed app, read from its Info.plist (best-effort). */
+export async function iosInstalledVersion(udid: string, bundleId: string): Promise<string | undefined> {
+  try {
+    const { stdout: appDir } = await execa('xcrun', ['simctl', 'get_app_container', udid, bundleId, 'app'])
+    const { stdout } = await execa('plutil', ['-convert', 'json', '-o', '-', `${appDir.trim()}/Info.plist`])
+    return plistShortVersion(JSON.parse(stdout))
+  } catch {
+    return undefined
   }
 }
 

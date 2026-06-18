@@ -21,6 +21,10 @@ export function parsePmPackages(stdout: string, pkg: string): boolean {
   return stdout.split('\n').some((l) => l.trim() === `package:${pkg}`)
 }
 
+export function parseDumpsysVersion(stdout: string): string | undefined {
+  return stdout.match(/versionName=(\S+)/)?.[1]
+}
+
 /** Resolve a running emulator's AVD name; console first, getprop fallback. */
 async function emulatorAvdName(serial: string): Promise<string | undefined> {
   try {
@@ -66,6 +70,7 @@ export async function discoverAndroid(): Promise<Device[]> {
         model: type === 'emulator' ? 'Android Emulator' : 'Android Device',
         state: 'booted',
         hasBuild: false,
+        buildStatus: 'unknown',
       })
     }
   } catch {
@@ -79,7 +84,7 @@ export async function discoverAndroid(): Promise<Device[]> {
     if (unresolvedEmulators === 0) {
       for (const avd of parseAvdList(stdout)) {
         if (!runningAvds.has(avd)) {
-          devices.push({ id: `avd:${avd}`, platform: 'android-emu', name: avd, model: 'Android Emulator', state: 'shutdown', hasBuild: false })
+          devices.push({ id: `avd:${avd}`, platform: 'android-emu', name: avd, model: 'Android Emulator', state: 'shutdown', hasBuild: false, buildStatus: 'unknown' })
         }
       }
     }
@@ -96,6 +101,16 @@ export async function hasAndroidBuild(serial: string, pkg: string): Promise<bool
     return parsePmPackages(stdout, pkg)
   } catch {
     return false
+  }
+}
+
+/** Marketing version of the installed app via `dumpsys package` (best-effort). */
+export async function androidInstalledVersion(serial: string, pkg: string): Promise<string | undefined> {
+  try {
+    const { stdout } = await execa('adb', ['-s', serial, 'shell', 'dumpsys', 'package', pkg])
+    return parseDumpsysVersion(stdout)
+  } catch {
+    return undefined
   }
 }
 

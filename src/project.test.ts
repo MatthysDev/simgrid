@@ -36,6 +36,11 @@ describe('parseAppConfig', () => {
     const info = parseAppConfig({}, '/projects/shoootin')
     expect(info.name).toBe('shoootin')
   })
+
+  it('reads the marketing version', () => {
+    expect(parseAppConfig({ expo: { name: 'Ekklo', version: '1.2.0' } }, '/p/ekklo').version).toBe('1.2.0')
+    expect(parseAppConfig({ name: 'Track' }, '/p/track').version).toBeUndefined()
+  })
 })
 
 describe('packageHasDevClient', () => {

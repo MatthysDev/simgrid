@@ -16,11 +16,18 @@ export function platformEmoji(platform: Platform): string {
   return PLATFORM_EMOJI[platform] ?? '•'
 }
 
+// "SIMGRID" in a compact box-drawing font (≤ 60 cols), inlined to avoid a figlet dep.
+const ASCII_ART = [
+  '╔═╗╦╔╦╗╔═╗╦═╗╦╔╦╗',
+  '╚═╗║║║║║ ╦╠╦╝║ ║║',
+  '╚═╝╩╩ ╩╚═╝╩╚═╩═╩╝',
+]
+
 /** Branded header printed at launch. */
 export function banner(): string {
   return [
-    `${pc.bgCyan(pc.black(' simgrid '))} ${pc.dim(`v${VERSION}`)}`,
-    pc.dim('one grid for all your simulators'),
+    ...ASCII_ART.map((line) => pc.cyan(line)),
+    `${pc.bold('simgrid')} ${pc.dim(`v${VERSION} · one grid for all your simulators`)}`,
   ].join('\n')
 }
 

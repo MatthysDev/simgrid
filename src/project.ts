@@ -13,6 +13,8 @@ export interface ProjectInfo {
   scripts: Record<string, string>
   /** package manager this project uses — drives how expo/scripts are invoked */
   runner: Runner
+  /** marketing version from app config (expo.version), for outdated-build hints */
+  version: string | undefined
 }
 
 /** True when expo-dev-client is declared in the project's package.json. */
@@ -54,6 +56,7 @@ export function parseAppConfig(
     hasDevClient: extras.hasDevClient ?? false,
     scripts: extras.scripts ?? {},
     runner: extras.runner ?? 'npm',
+    version: expo.version,
   }
 }
 

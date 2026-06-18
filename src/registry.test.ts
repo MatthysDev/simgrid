@@ -2,7 +2,7 @@ import { mkdtemp, readdir, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { emptyState, loadState, mutateState, reconcile, saveState, type State } from './registry.js'
+import { deviceFingerprint, emptyState, loadState, mutateState, reconcile, recordFingerprint, saveState, type State } from './registry.js'
 
 const session = (over: Partial<State['sessions'][0]> = {}): State['sessions'][0] => ({
   projectPath: '/p/yolgo',
@@ -23,6 +23,25 @@ describe('registry', () => {
     const state: State = { sessions: [session()], projectPrefs: { '/p/yolgo': { lastDeviceIds: ['UDID-1'] } } }
     await saveState(state, file)
     expect(await loadState(file)).toEqual(state)
+  })
+
+  it('records a build fingerprint per device and reads it back', () => {
+    const pref = recordFingerprint({ lastDeviceIds: [] }, 'UDID-1', 'fp-abc', '2026-06-18T00:00:00.000Z')
+    expect(deviceFingerprint(pref, 'UDID-1')).toBe('fp-abc')
+    expect(pref.builtFingerprints?.['UDID-1'].builtAt).toBe('2026-06-18T00:00:00.000Z')
+  })
+
+  it('overwrites a device fingerprint on a new build, keeps others', () => {
+    let pref = recordFingerprint({ lastDeviceIds: [] }, 'A', 'old', 't1')
+    pref = recordFingerprint(pref, 'B', 'bbb', 't2')
+    pref = recordFingerprint(pref, 'A', 'new', 't3')
+    expect(deviceFingerprint(pref, 'A')).toBe('new')
+    expect(deviceFingerprint(pref, 'B')).toBe('bbb')
+  })
+
+  it('deviceFingerprint is undefined when unknown', () => {
+    expect(deviceFingerprint(undefined, 'X')).toBeUndefined()
+    expect(deviceFingerprint({ lastDeviceIds: [] }, 'X')).toBeUndefined()
   })
 
   it('returns empty state for a missing file', async () => {

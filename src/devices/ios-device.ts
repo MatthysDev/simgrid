@@ -15,6 +15,7 @@ export function parseDevicectl(json: any): Device[] {
       model: d.hardwareProperties?.marketingName ?? 'iPhone/iPad',
       state: 'booted' as const, // physical devices are always "on"
       hasBuild: false, // not cheaply detectable — expo run:ios handles install
+      buildStatus: 'unknown' as const,
     }))
 }
 

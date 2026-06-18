@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { banner, launchSummary, platformEmoji } from './ui.js'
+import { banner, launchSummary, platformEmoji, VERSION } from './ui.js'
+
+const stripAnsi = (s: string) => s.replace(/\[[0-9;]*m/g, '')
 
 describe('platformEmoji', () => {
   it('maps each platform to an icon', () => {
@@ -11,10 +13,19 @@ describe('platformEmoji', () => {
 })
 
 describe('banner', () => {
-  it('shows the brand and tagline', () => {
+  it('shows the brand, version and tagline', () => {
     const out = banner()
     expect(out).toContain('simgrid')
+    expect(out).toContain(VERSION)
     expect(out.toLowerCase()).toContain('one grid')
+  })
+
+  it('renders a multi-line ASCII art that stays within 60 columns', () => {
+    const lines = stripAnsi(banner()).split('\n')
+    expect(lines.length).toBeGreaterThanOrEqual(4)
+    for (const line of lines) {
+      expect([...line].length).toBeLessThanOrEqual(60)
+    }
   })
 })
 

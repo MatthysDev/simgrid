@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { findCloneSpec, parseSimctlDevices } from './ios-sim.js'
+import { findCloneSpec, parseSimctlDevices, plistShortVersion } from './ios-sim.js'
 
 const SIMCTL_JSON = {
   devices: {
@@ -39,6 +39,20 @@ describe('parseSimctlDevices', () => {
 
   it('excludes unavailable runtimes/devices', () => {
     expect(parseSimctlDevices(SIMCTL_JSON).some((d) => d.id === 'CCC')).toBe(false)
+  })
+
+  it('defaults build status to unknown until probed', () => {
+    expect(parseSimctlDevices(SIMCTL_JSON).every((d) => d.buildStatus === 'unknown')).toBe(true)
+  })
+})
+
+describe('plistShortVersion', () => {
+  it('reads CFBundleShortVersionString from a converted Info.plist', () => {
+    expect(plistShortVersion({ CFBundleShortVersionString: '1.1.0', CFBundleVersion: '42' })).toBe('1.1.0')
+  })
+
+  it('is undefined when the key is missing', () => {
+    expect(plistShortVersion({})).toBeUndefined()
   })
 })
 

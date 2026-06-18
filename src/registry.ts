@@ -21,6 +21,18 @@ export interface ProjectPref {
   buildCommands?: { ios?: string; android?: string }
   /** Named device sets the user can relaunch in one shot (`--profile <name>`). */
   profiles?: Record<string, string[]>
+  /** Native fingerprint recorded at the last simgrid build, per device id. */
+  builtFingerprints?: Record<string, { fingerprint: string; builtAt: string }>
+}
+
+/** Record the native fingerprint of a fresh build for one device (immutable update). */
+export function recordFingerprint(pref: ProjectPref, deviceId: string, fingerprint: string, builtAt: string): ProjectPref {
+  return { ...pref, builtFingerprints: { ...pref.builtFingerprints, [deviceId]: { fingerprint, builtAt } } }
+}
+
+/** The fingerprint baseline recorded for a device, if any. */
+export function deviceFingerprint(pref: ProjectPref | undefined, deviceId: string): string | undefined {
+  return pref?.builtFingerprints?.[deviceId]?.fingerprint
 }
 
 export interface State {

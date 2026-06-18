@@ -10,8 +10,27 @@ const PLATFORM_LABELS: Record<Platform, string> = {
   'android-device': 'Android Devices',
 }
 
-export function deviceHint(device: Device, busy: Session | undefined): string {
-  const parts = [device.hasBuild ? '✅ build installed' : '⚙️ will build']
+function buildLabel(device: Device, targetVersion: string | undefined): string {
+  const v =
+    device.installedVersion && targetVersion && device.installedVersion !== targetVersion
+      ? ` (v${device.installedVersion} → ${targetVersion})`
+      : ''
+  switch (device.buildStatus) {
+    case 'absent':
+      return '⚙️ will build'
+    case 'up-to-date':
+      return `✅ up to date${v}`
+    case 'rebuild':
+      return `♻️ rebuild required${v}`
+    case 'untracked':
+      return `✅ installed (native untracked)${v}`
+    default:
+      return '· build status unknown'
+  }
+}
+
+export function deviceHint(device: Device, busy: Session | undefined, targetVersion?: string): string {
+  const parts = [buildLabel(device, targetVersion)]
   if (device.state === 'booted') parts.push('🟢 booted')
   if (busy) parts.push(`🔴 busy: ${busy.projectName} :${busy.metroPort}`)
   return parts.join(' · ')
@@ -27,6 +46,7 @@ export async function pickDevices(
   otherSessions: Session[],
   lastIds: string[],
   projectName: string,
+  targetVersion?: string,
 ): Promise<Device[]> {
   intro(`${pc.bgCyan(pc.black(' simgrid '))} ${pc.bold(projectName)}`)
 
@@ -34,7 +54,7 @@ export async function pickDevices(
   for (const d of sortDevices(devices)) {
     const busy = otherSessions.find((s) => s.deviceId === d.id)
     const group = PLATFORM_LABELS[d.platform]
-    ;(options[group] ??= []).push({ value: d.id, label: d.name, hint: deviceHint(d, busy) })
+    ;(options[group] ??= []).push({ value: d.id, label: d.name, hint: deviceHint(d, busy, targetVersion) })
   }
 
   const picked = await groupMultiselect({
