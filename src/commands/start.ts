@@ -23,7 +23,8 @@ import { getProfile, saveProfile } from '../profile.js'
 import { type ProjectInfo, resolveProject } from '../project.js'
 import { deviceFingerprint, loadState, mutateState, type ProjectPref, recordFingerprint, reconcile, type Session } from '../registry.js'
 import { expoArgv, expoExec, scriptRun } from '../runner.js'
-import { banner, launchSummary } from '../ui.js'
+import { banner, launchSummary, VERSION } from '../ui.js'
+import { updateNotice } from '../update-check.js'
 
 const CUSTOM = '__custom__'
 
@@ -31,6 +32,10 @@ export async function start(cwd = process.cwd(), argv: string[] = process.argv.s
   const { profile: profileName } = parseStartArgs(argv)
 
   console.log(`\n${banner()}\n`)
+
+  // Non-blocking self-update notice: shown from cache, refreshed in the background.
+  const notice = await updateNotice(VERSION)
+  if (notice) console.log(`${notice}\n`)
 
   // Pre-flight: warn (but never block) about device tools that aren't on PATH.
   const missing = missingTools(await checkTools())

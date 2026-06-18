@@ -17,6 +17,13 @@ losing track of which app runs where.
 already have your dev build installed, which are busy with another project, and it routes each
 project to the right device automatically.
 
+:::info Built for Expo projects
+simgrid targets **Expo** apps (managed or bare-with-Expo). It reads your `app.json` / `app.config.ts`,
+uses `expo-dev-client` deep links, and drives `expo start` / `expo run`. A non-Expo React Native
+project won't be detected correctly. Native dev-build freshness is computed with
+[Expo Fingerprint](https://docs.expo.dev/versions/latest/sdk/fingerprint/).
+:::
+
 ```bash
 npm i -g simgrid-cli   # the command is "simgrid"
 simgrid                # pick devices, then launch
@@ -26,9 +33,11 @@ simgrid                # pick devices, then launch
 
 - 🎛️ **Interactive picker** across iOS simulators, Android emulators and physical devices.
 - 🚀 **Parallel launch** — one project on many devices, **one Metro per project**, reused across them.
-- 🔍 **Dev-build detection** per device: instant launch when installed, managed build otherwise.
+- 🔍 **Dev-build status** per device, without booting it: installed or not, and whether it's
+  **outdated** (native fingerprint changed → rebuild needed, or app version drift).
 - 🔌 **No port conflicts** — a free Metro port per project, dev-client deep-linked automatically.
 - 🧭 **Shared, self-healing registry** that tracks every session and survives `kill -9`.
+- ⬆️ **Self-update notice** — tells you when a newer `simgrid-cli` is on npm (checked daily, cached).
 - 📋 **`logs` · `doctor` · `profiles`** for everyday work.
 
 No daemon. No config file. Just a CLI.

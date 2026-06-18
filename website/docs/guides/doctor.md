@@ -31,3 +31,17 @@ Missing:
 A short version of this check also runs as a **pre-flight at startup**: if a tool is missing, you
 get a one-line warning pointing you to `simgrid doctor`, but launching is never blocked — simgrid
 just works with whatever platforms are available.
+
+## Update check
+
+`simgrid doctor` also tells you whether you're on the latest published `simgrid-cli`:
+
+```text
+✔ simgrid v0.5.0 is up to date
+# or
+⬆ simgrid v0.4.0 — latest is 0.5.0. Update: npm i -g simgrid-cli@latest
+```
+
+At normal startup the same check runs **non-blocking**: the notice is shown from a daily cache and
+refreshed in the background, so it never adds latency and works offline (it just shows the last
+known result). Offline during a `doctor` run, the line degrades to `unavailable`.

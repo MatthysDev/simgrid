@@ -12,6 +12,8 @@ Working on several Expo / React Native projects at the same time is painful. Lau
 
 simgrid solves this at the device layer: it knows which simulators and emulators exist, which ones already have your dev build installed, which ones are busy with another project, and it routes each project to the right device automatically.
 
+> **For Expo projects.** simgrid is built for **Expo** apps (managed or bare-with-Expo): it reads `app.json` / `app.config.ts`, uses `expo-dev-client` deep links, and drives `expo start` / `expo run`. Dev-build freshness is computed with [Expo Fingerprint](https://docs.expo.dev/versions/latest/sdk/fingerprint/). A plain (non-Expo) React Native project won't be detected correctly.
+
 ---
 
 ## Quick start
