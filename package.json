@@ -1,13 +1,24 @@
 {
   "name": "simgrid-cli",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "One grid for all your simulators — run multiple Expo projects on multiple devices, in parallel, without the alt-tab dance.",
   "type": "module",
-  "bin": { "simgrid": "./dist/cli.js" },
-  "files": ["dist"],
-  "engines": { "node": ">=18" },
-  "repository": { "type": "git", "url": "git+https://github.com/MatthysDev/simgrid.git" },
-  "bugs": { "url": "https://github.com/MatthysDev/simgrid/issues" },
+  "bin": {
+    "simgrid": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MatthysDev/simgrid.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MatthysDev/simgrid/issues"
+  },
   "homepage": "https://github.com/MatthysDev/simgrid#readme",
   "scripts": {
     "build": "tsup",
@@ -17,7 +28,15 @@
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
-  "keywords": ["expo", "react-native", "simulator", "emulator", "metro", "parallel", "dev-client"],
+  "keywords": [
+    "expo",
+    "react-native",
+    "simulator",
+    "emulator",
+    "metro",
+    "parallel",
+    "dev-client"
+  ],
   "license": "MIT",
   "dependencies": {
     "@clack/prompts": "^0.11.0",
