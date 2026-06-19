@@ -14,6 +14,7 @@ import {
 import { discoverDevices } from '../devices/index.js'
 import { cloneIosSim } from '../devices/ios-sim.js'
 import type { Device, Platform } from '../devices/types.js'
+import { depsStatus, installArgv } from '../deps.js'
 import { currentFingerprint, refineBuildStatus } from '../fingerprint.js'
 import { checkTools, missingTools } from '../health.js'
 import { ensureBooted, openApp, runBuild, startMetro } from '../launcher.js'
@@ -56,6 +57,11 @@ export async function start(cwd = process.cwd(), argv: string[] = process.argv.s
       console.log(pc.yellow('  continuing without expo-dev-client — Metro will run in Expo Go mode.'))
     }
   }
+
+  // Make sure JS deps are present before Metro bundles or the native build runs —
+  // a missing/stale node_modules otherwise crashes the bundler or the built app.
+  await ensureDeps(project)
+
   const state = reconcile(await loadState())
   const otherSessions = state.sessions.filter((s) => s.projectPath !== project.path)
 
@@ -227,6 +233,34 @@ export async function start(cwd = process.cwd(), argv: string[] = process.argv.s
       sessions.map((s) => ({ platform: s.platform, deviceName: s.deviceName, metroPort: s.metroPort })),
     )}\n`,
   )
+}
+
+/**
+ * Ensure node_modules is installed before anything bundles or builds. Absent deps
+ * are installed automatically (mandatory anyway); stale deps prompt first. Never
+ * blocks: a failed/declined install just warns and continues.
+ */
+async function ensureDeps(project: ProjectInfo): Promise<void> {
+  const status = await depsStatus(project.path)
+  if (status === 'ok') return
+  const { command, args } = installArgv(project.runner)
+  const cmd = `${command} ${args.join(' ')}`
+  if (status === 'stale') {
+    const yes = await confirm({ message: `Dependencies may be out of date (lockfile newer than node_modules). Run ${pc.bold(cmd)}?` })
+    if (isCancel(yes) || !yes) {
+      console.log(pc.yellow('  continuing with the current node_modules.'))
+      return
+    }
+  }
+  const sp = spinner()
+  sp.start(status === 'absent' ? `Installing dependencies (${cmd})` : `Updating dependencies (${cmd})`)
+  try {
+    await execa(command, args, { cwd: project.path })
+    sp.stop(pc.dim('dependencies ready'))
+  } catch (err) {
+    sp.stop(pc.yellow(`${cmd} failed — continuing, but the build may crash on missing deps.`))
+    console.error(err instanceof Error ? err.message : String(err))
+  }
 }
 
 /** Persist a freshly chosen build command for this project + platform (locked delta). */

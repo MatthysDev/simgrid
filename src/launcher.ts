@@ -37,9 +37,15 @@ export function startMetro(project: ProjectInfo, port: number): ChildProcess {
   const { command, prefix } = expoArgv(project.runner)
   const args = [...prefix, 'start', '--port', String(port)]
   if (project.hasDevClient) args.push('--dev-client')
+  // The shared Metro is a background server, not a foreground app. We DON'T inherit
+  // stdin: without a TTY on stdin Expo skips its interactive keypress menu (which
+  // also floods the terminal with the QR block and steals raw-mode input from our
+  // build prompts, so they get buried/eaten — the "it didn't build" bug). Watch mode
+  // stays on (it depends on file-watching, not stdin); CI=1 would disable hot-reload
+  // so we deliberately avoid it.
   return spawn(command, args, {
     cwd: project.path,
-    stdio: 'inherit',
+    stdio: ['ignore', 'inherit', 'inherit'],
     env: process.env,
   })
 }
