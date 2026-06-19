@@ -1,6 +1,6 @@
 {
   "name": "simgrid-cli",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "One grid for all your simulators — run multiple Expo projects on multiple devices, in parallel, without the alt-tab dance.",
   "type": "module",
   "bin": {
